@@ -1,0 +1,72 @@
+# Ultra-Fast Scalping Trading Configuration
+# =========================================
+
+trading:
+  # Symbols to trade (focus on high-volume pairs)
+  symbols:
+    - 'BTCUSDT'
+    - 'ETHUSDT'
+    - 'BNBUSDT'
+    - 'ADAUSDT'
+    - 'XRPUSDT'
+    - 'SOLUSDT'
+    - 'DOTUSDT'
+    - 'LINKUSDT'
+    - 'AVAXUSDT'
+    - 'LTCUSDT'
+  
+  # Position sizing
+  base_position_usd: 100
+  leverage: 15
+  max_concurrent_positions: 20
+  
+  # Exchange settings
+  exchange: 'binance'
+  use_testnet: true
+  
+scalping:
+  # Signal thresholds (optimized for scalping)
+  signal_threshold: 0.12          # Lower for more opportunities
+  confidence_threshold: 0.60      # Balanced for speed vs accuracy
+  min_confirmations: 1            # Fast execution
+  
+  # Timing parameters
+  max_hold_time: 300              # 5 minutes maximum
+  signal_cooldown: 5              # 5 seconds between signals
+  processing_cycle_ms: 100        # 100ms processing cycles
+  
+  # Signal types to use
+  signals:
+    momentum_scalping: true       # Price momentum analysis
+    mean_reversion: true          # RSI-based reversals
+    order_flow: true              # Order book imbalance
+    volume_spikes: true           # Volume breakouts
+    price_acceleration: true      # Velocity analysis
+    ema_crossovers: true          # Moving average signals
+    bollinger_squeeze: true       # BB compression/expansion
+    rsi_divergence: true          # Momentum divergence
+
+market_making:
+  enabled: true
+  min_spread_bps: 2.0            # Minimum 2 basis points
+  max_inventory: 1.0             # Maximum position size
+  inventory_skew: 0.001          # 0.1% per unit inventory
+  
+execution:
+  order_type: 'MARKET'           # Fast execution
+  time_in_force: 'IOC'          # Immediate or cancel
+  connection_pool_size: 100      # HTTP connections
+  batch_orders: true             # Batch when possible
+  
+performance:
+  # Ultra-low latency settings
+  use_zero_allocation: true
+  use_hardware_acceleration: true
+  cpu_affinity: [0, 1, 2, 3]    # Dedicated CPU cores
+  memory_pools: true
+  lock_free_operations: true
+  
+  # Caching
+  cache_size: 2000
+  cache_alignment: 64            # CPU cache line size
+  prefetch_enabled: true

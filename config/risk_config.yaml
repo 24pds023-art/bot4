@@ -1,0 +1,79 @@
+# Risk Management Configuration
+# =============================
+
+position_risk:
+  # Stop loss and take profit (scalping-optimized)
+  stop_loss_pct: 0.002           # 0.2% tight stops
+  take_profit_pct: 0.004         # 0.4% quick profits
+  risk_reward_ratio: 2.0         # 2:1 minimum
+  
+  # Dynamic exits
+  use_trailing_stops: true
+  trailing_distance_pct: 0.001   # 0.1% trailing distance
+  partial_profit_taking: true
+  partial_exit_pct: 0.5          # Take 50% at first target
+  
+portfolio_risk:
+  # Portfolio-level limits
+  max_portfolio_risk: 0.02       # 2% VaR limit
+  max_drawdown: 0.10             # 10% maximum drawdown
+  max_correlation: 0.7           # Position correlation limit
+  
+  # Daily limits
+  max_daily_trades: 200          # Maximum trades per day
+  max_daily_loss: 500            # Maximum daily loss (USD)
+  daily_profit_target: 200      # Daily profit target (USD)
+  
+position_sizing:
+  # Position sizing method
+  method: 'volatility_adjusted'  # Options: fixed, volatility_adjusted, kelly
+  base_size: 0.1                 # Base position size
+  min_size: 0.01                 # Minimum position
+  max_size: 1.0                  # Maximum position
+  
+  # Volatility adjustment
+  volatility_lookback: 20        # Periods for volatility calculation
+  volatility_multiplier: 2.0     # Volatility adjustment factor
+  
+  # Kelly criterion (if method = 'kelly')
+  kelly_fraction: 0.25           # Conservative Kelly fraction
+  win_rate_estimate: 0.65        # Estimated win rate
+  avg_win_loss_ratio: 2.0        # Average win/loss ratio
+
+market_conditions:
+  # Market regime detection
+  high_volatility_threshold: 0.04  # 4% volatility threshold
+  low_liquidity_threshold: 1000    # Minimum volume threshold
+  
+  # Risk adjustments by market condition
+  volatile_market_multiplier: 0.5  # Reduce size in volatile markets
+  low_liquidity_multiplier: 0.3    # Reduce size in low liquidity
+  
+  # Time-based risk
+  avoid_news_events: true
+  news_buffer_minutes: 30        # Avoid trading 30min before/after news
+  
+emergency_stops:
+  # Circuit breakers
+  enable_emergency_stops: true
+  max_consecutive_losses: 5      # Stop after 5 consecutive losses
+  rapid_loss_threshold: 0.05     # 5% rapid loss threshold
+  rapid_loss_timeframe: 300      # 5 minutes
+  
+  # Recovery mode
+  recovery_mode_enabled: true
+  recovery_position_multiplier: 0.5  # Half size during recovery
+  recovery_exit_timeframe: 3600      # 1 hour recovery period
+
+monitoring:
+  # Real-time monitoring
+  risk_check_interval: 30        # Check risk every 30 seconds
+  alert_thresholds:
+    portfolio_risk: 0.015        # Alert at 1.5% portfolio risk
+    drawdown: 0.05               # Alert at 5% drawdown
+    daily_loss: 300              # Alert at $300 daily loss
+  
+  # Logging
+  log_all_trades: true
+  log_risk_events: true
+  performance_snapshot_interval: 300  # 5 minutes
