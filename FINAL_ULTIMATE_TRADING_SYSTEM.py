@@ -57,6 +57,8 @@ from advanced_optimizations import (
 from deep_learning_models import DeepLearningTrainingManager
 # Removed multi-exchange arbitrage - focusing on scalping only
 from ultra_low_latency import UltraLowLatencyEngine
+from ultra_scalping_engine import UltraScalpingEngine
+from memory_pool_optimizer import AdvancedMemoryManager
 
 # Try to import high-performance libraries
 try:
@@ -139,6 +141,8 @@ class UltimateTradingSystem:
         self.deep_learning_manager = None
         # Removed arbitrage engine - scalping focused
         self.ultra_low_latency_engine = None
+        self.ultra_scalping_engine = None
+        self.memory_manager = None
         
         # Performance tracking
         self.performance_stats = {
@@ -201,6 +205,14 @@ class UltimateTradingSystem:
             if self.config.USE_ULTRA_LOW_LATENCY:
                 print("   ⚡ Ultra-Low Latency Engine...")
                 self.ultra_low_latency_engine = UltraLowLatencyEngine(self.symbols)
+            
+            # 10. Initialize ultra-scalping engine
+            print("   🔥 Ultra-Advanced Scalping Engine...")
+            self.ultra_scalping_engine = UltraScalpingEngine(self.symbols)
+            
+            # 11. Initialize advanced memory manager
+            print("   💾 Advanced Memory Manager...")
+            self.memory_manager = AdvancedMemoryManager()
             
             print("✅ All systems initialized successfully!")
             return True
