@@ -1,5 +1,5 @@
-# ULTRA-HIGH PERFORMANCE TRADING BOT REQUIREMENTS
-# ===============================================
+# ULTRA-FAST SCALPING SYSTEM REQUIREMENTS
+# =======================================
 # Core trading and data processing
 python-binance==1.0.19
 pandas==2.1.4
