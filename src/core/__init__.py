@@ -1,15 +1,15 @@
 """
 Core Trading System Components
 ==============================
-Main trading system, order execution, and core optimizations.
+Core components for the ultra-fast scalping trading system.
 """
 
-from .main_trading_system import UltimateTradingSystem
-from .ultra_optimized_trading_system import UltraOptimizedTradingSystem
-from .fast_order_execution import UltraFastOrderExecution
-
+# Only import what's actually needed and available
 __all__ = [
-    'UltimateTradingSystem',
-    'UltraOptimizedTradingSystem',
-    'UltraFastOrderExecution'
+    'RealTradingSystem',
 ]
+
+def get_real_trading_system():
+    """Get RealTradingSystem with lazy loading"""
+    from .real_trading_system import RealTradingSystem
+    return RealTradingSystem
