@@ -114,8 +114,18 @@ class SimpleBinanceConnector:
             raise
     
     async def place_market_order(self, symbol: str, side: str, quantity: float):
-        """Place market order"""
+        """Place market order with improved error handling"""
         try:
+            # Round quantity to appropriate precision
+            if symbol in ['BTCUSDT', 'ETHUSDT']:
+                quantity = round(quantity, 3)
+            else:
+                quantity = round(quantity, 2)
+            
+            # Ensure minimum quantity
+            if quantity < 0.001:
+                raise Exception(f"Quantity too small: {quantity}")
+            
             params = {
                 'symbol': symbol,
                 'side': side.upper(),
@@ -127,14 +137,49 @@ class SimpleBinanceConnector:
             params['signature'] = self._create_signature(params)
             
             url = f"{self.base_url}/fapi/v1/order"
-            async with self.session.post(url, data=params) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    self.logger.info(f"✅ Order executed: {symbol} {side} {quantity}")
-                    return data
-                else:
-                    error = await response.json()
-                    raise Exception(f"Order failed: {error}")
+            
+            # Retry logic for server errors
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    async with self.session.post(url, data=params) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            self.logger.info(f"✅ Order executed: {symbol} {side} {quantity}")
+                            return data
+                        elif response.status == 502:
+                            # Server error - retry
+                            if attempt < max_retries - 1:
+                                self.logger.warning(f"Server error (502), retrying... attempt {attempt + 1}")
+                                await asyncio.sleep(1)
+                                continue
+                            else:
+                                raise Exception("Server error after retries")
+                        else:
+                            try:
+                                error = await response.json()
+                                error_msg = error.get('msg', 'Unknown error')
+                                
+                                # Handle specific errors
+                                if 'PERCENT_PRICE' in error_msg:
+                                    self.logger.warning(f"Price filter error - skipping order: {error_msg}")
+                                    return None  # Return None to indicate order should be skipped
+                                elif 'LOT_SIZE' in error_msg:
+                                    raise Exception(f"Quantity error: {error_msg}")
+                                else:
+                                    raise Exception(f"Order failed: {error}")
+                            except Exception as json_error:
+                                # If we can't parse JSON, use status code
+                                raise Exception(f"HTTP {response.status}: {await response.text()}")
+                                
+                except asyncio.TimeoutError:
+                    if attempt < max_retries - 1:
+                        self.logger.warning(f"Timeout, retrying... attempt {attempt + 1}")
+                        await asyncio.sleep(1)
+                        continue
+                    else:
+                        raise Exception("Request timeout after retries")
+                        
         except Exception as e:
             self.logger.error(f"❌ Order execution failed: {e}")
             raise

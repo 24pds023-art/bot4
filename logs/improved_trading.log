@@ -1,0 +1,14 @@
+2025-10-19 20:49:57,445 - core.improved_trading_system - INFO - 🔥 Improved Trading System initialized
+2025-10-19 20:49:57,445 - core.improved_trading_system - INFO -    Environment: TESTNET
+2025-10-19 20:49:57,445 - core.improved_trading_system - INFO -    Symbols: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT']
+2025-10-19 20:49:57,445 - core.improved_trading_system - INFO -    Position Size: $50.0
+2025-10-19 20:49:57,445 - core.improved_trading_system - INFO - 🚀 Initializing Improved Trading System...
+2025-10-19 20:49:57,445 - core.simple_binance_connector - INFO - 🚀 Initializing Simple Binance connector...
+2025-10-19 20:49:57,704 - core.simple_binance_connector - INFO - ✅ Binance API ping successful
+2025-10-19 20:49:57,704 - core.simple_binance_connector - INFO - ✅ Simple Binance connector ready
+2025-10-19 20:49:57,998 - core.simple_binance_connector - ERROR - ❌ Error getting balance: Balance request failed: {'code': -2014, 'msg': 'API-key format invalid.'}
+2025-10-19 20:49:57,999 - asyncio - ERROR - Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x7f1334021a90>
+2025-10-19 20:49:57,999 - asyncio - ERROR - Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x7f1333abd6d0>, 132627.34671184)])']
+connector: <aiohttp.connector.TCPConnector object at 0x7f1334021be0>

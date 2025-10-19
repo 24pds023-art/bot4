@@ -238,7 +238,7 @@ class ImprovedTradingSystem:
             self.logger.error(f"❌ Error checking exits: {e}")
     
     async def _close_position(self, symbol: str, reason: str):
-        """Close position"""
+        """Close position with better error handling"""
         try:
             position = self.positions[symbol]
             close_side = 'SELL' if position.side == 'LONG' else 'BUY'
@@ -265,10 +265,30 @@ class ImprovedTradingSystem:
                 
                 self.logger.info(f"✅ POSITION CLOSED: {symbol}")
                 self.logger.info(f"   P&L: ${final_pnl:.2f}")
+                self.logger.info(f"   Reason: {reason}")
                 self.logger.info(f"   Total P&L: ${self.risk_manager.total_pnl:.2f}")
                 
+            else:
+                # Order failed but we still need to handle the position
+                self.logger.warning(f"⚠️ Close order failed for {symbol}, but continuing...")
+                
+                # For critical situations (like emergency stop), force remove position
+                if "emergency" in reason.lower() or "shutdown" in reason.lower():
+                    final_pnl = position.pnl
+                    self.risk_manager.update_balance(final_pnl)
+                    del self.positions[symbol]
+                    self.logger.warning(f"⚠️ POSITION FORCE CLOSED: {symbol} (P&L: ${final_pnl:.2f})")
+                
         except Exception as e:
-            self.logger.error(f"❌ Position close failed: {e}")
+            self.logger.error(f"❌ Position close failed for {symbol}: {e}")
+            
+            # For critical situations, force close position to prevent stuck positions
+            if symbol in self.positions and ("emergency" in reason.lower() or "shutdown" in reason.lower()):
+                position = self.positions[symbol]
+                final_pnl = position.pnl
+                self.risk_manager.update_balance(final_pnl)
+                del self.positions[symbol]
+                self.logger.warning(f"⚠️ POSITION EMERGENCY CLOSED: {symbol} (P&L: ${final_pnl:.2f})")
     
     async def start_trading(self):
         """Start trading"""
