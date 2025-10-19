@@ -101,10 +101,11 @@ async def interactive_menu():
             print("1. 🔥 Start REAL Trading (Execute live orders)")
             print("2. 📊 Monitor Data Only (Live prices, no trading)")
             print("3. 🧪 Test API Connection")
-            print("4. ⚙️  System Information")
-            print("5. ❌ Exit")
+            print("4. 🌐 Launch Web Dashboard")
+            print("5. ⚙️  System Information")
+            print("6. ❌ Exit")
             
-            choice = input("\nSelect option (1-5): ").strip()
+            choice = input("\nSelect option (1-6): ").strip()
             
             if choice == '1':
                 print(f"\n⚠️  This will execute REAL trades!")
@@ -126,9 +127,12 @@ async def interactive_menu():
                 await system.test_connection()
             
             elif choice == '4':
-                print_system_info(system)
+                await launch_dashboard(system)
             
             elif choice == '5':
+                print_system_info(system)
+            
+            elif choice == '6':
                 print("👋 Goodbye!")
                 break
             
@@ -140,6 +144,44 @@ async def interactive_menu():
         return 1
     
     return 0
+
+async def launch_dashboard(system):
+    """Launch the web dashboard"""
+    try:
+        from utils.real_time_dashboard import start_dashboard
+        
+        print("🌐 Launching Real-Time Web Dashboard...")
+        print(f"   Environment: {'TESTNET' if system.use_testnet else 'LIVE'}")
+        print(f"   Balance: ${system.risk_manager.current_balance:.2f}")
+        
+        # Start dashboard
+        dashboard, runner, update_task = await start_dashboard(system, port=8080)
+        
+        print("✅ Dashboard launched successfully!")
+        print(f"   🌐 URL: http://localhost:8080")
+        print(f"   📡 WebSocket: ws://localhost:8080/ws")
+        print()
+        print("🎯 Dashboard Features:")
+        print("   • Real-time P&L tracking")
+        print("   • Live position monitoring") 
+        print("   • Signal visualization")
+        print("   • Performance charts")
+        print("   • Emergency stop controls")
+        print()
+        print("Press Ctrl+C to stop dashboard...")
+        
+        try:
+            await update_task
+        except KeyboardInterrupt:
+            print("\n⏹️ Dashboard stopped")
+        finally:
+            await runner.cleanup()
+            
+    except ImportError:
+        print("❌ Dashboard dependencies not available")
+        print("   Install with: pip install aiohttp aiohttp-cors")
+    except Exception as e:
+        print(f"❌ Error launching dashboard: {e}")
 
 def print_system_info(system):
     """Print detailed system information"""
@@ -169,6 +211,7 @@ async def main():
     parser.add_argument('--trade', action='store_true', help='Start trading directly')
     parser.add_argument('--monitor', action='store_true', help='Monitor data only')
     parser.add_argument('--test', action='store_true', help='Test API connection')
+    parser.add_argument('--dashboard', action='store_true', help='Launch web dashboard')
     
     args = parser.parse_args()
     
@@ -196,6 +239,12 @@ async def main():
             system = RealTradingSystem()
             await system.initialize()
             await system.test_connection()
+            
+        elif args.dashboard:
+            # Dashboard mode
+            system = RealTradingSystem()
+            await system.initialize()
+            await launch_dashboard(system)
             
         else:
             # Interactive menu mode
