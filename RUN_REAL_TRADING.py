@@ -15,7 +15,7 @@ from pathlib import Path
 # Add src to path
 sys.path.append(str(Path(__file__).parent / 'src'))
 
-from src.core.real_main_system import main
+from src.core.real_main_system import RealTradingSystem
 
 def print_real_trading_banner():
     """Print real trading banner"""
@@ -117,8 +117,36 @@ async def main_wrapper():
     print("\n🚀 Starting REAL trading system...")
     
     try:
-        # Run the real trading system
-        return await main()
+        # Initialize and run the real trading system
+        system = RealTradingSystem()
+        await system.initialize()
+        
+        # Show menu and handle user choice
+        while True:
+            print("\n🎯 REAL TRADING SYSTEM MENU:")
+            print("1. 🔥 Start REAL Trading (Execute real trades)")
+            print("2. 📊 Market Data Only (Monitor prices)")
+            print("3. 🧪 Test API Connection")
+            print("4. ❌ Exit")
+            
+            choice = input("\nSelect option (1-4): ").strip()
+            
+            if choice == '1':
+                await system.run_real_trading()
+                break
+            elif choice == '2':
+                await system.run_market_data_only()
+                break
+            elif choice == '3':
+                await system.test_connection()
+                break
+            elif choice == '4':
+                print("👋 Goodbye!")
+                break
+            else:
+                print("❌ Invalid option")
+        
+        return 0
         
     except KeyboardInterrupt:
         print("\n⏹️ Real trading stopped by user")

@@ -207,8 +207,20 @@ def print_banner():
     print("🚀 NO SIMULATIONS - 100% LIVE TRADING")
     print("="*80)
 
+def print_banner():
+    """Print system banner"""
+    print("\n" + "="*80)
+    print("🔥 REAL ULTRA-FAST SCALPING TRADING SYSTEM")
+    print("="*80)
+    print("⚡ REAL Binance WebSocket connections")
+    print("📊 REAL market data processing")
+    print("💰 REAL order execution")
+    print("🎯 REAL risk management")
+    print("🚀 NO SIMULATIONS - 100% LIVE TRADING")
+    print("="*80)
+
 async def main():
-    """Main entry point"""
+    """Main entry point for direct execution"""
     print_banner()
     
     # Check for required files

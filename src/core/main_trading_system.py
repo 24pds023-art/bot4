@@ -43,22 +43,22 @@ import threading
 import multiprocessing as mp
 
 # Import all our optimization modules
-from ultra_optimized_trading_system import (
+from .ultra_optimized_trading_system import (
     ultra_fast_rsi, ultra_fast_ema, ultra_fast_macd,
     UltraFastIncrementalEngine, AdaptiveMLSignalFilter, 
     AdaptiveThresholdManager
 )
-from fast_order_execution import UltraFastOrderExecution
-from advanced_optimizations import (
+from .fast_order_execution import UltraFastOrderExecution
+from ..optimizations.advanced_optimizations import (
     IntelligentRateLimiter, AdvancedIndicatorSuite,
     EnhancedMicrostructureAnalyzer, AdvancedMLSuite,
     AdvancedPortfolioOptimizer, UltraAdvancedTradingSystem
 )
-from deep_learning_models import DeepLearningTrainingManager
+from ..engines.deep_learning_models import DeepLearningTrainingManager
 # Removed multi-exchange arbitrage - focusing on scalping only
-from ultra_low_latency import UltraLowLatencyEngine
-from ultra_scalping_engine import UltraScalpingEngine
-from memory_pool_optimizer import AdvancedMemoryManager
+from ..optimizations.ultra_low_latency import UltraLowLatencyEngine
+from ..engines.ultra_scalping_engine import UltraScalpingEngine
+from ..optimizations.memory_pool_optimizer import AdvancedMemoryManager
 
 # Try to import high-performance libraries
 try:
