@@ -10,10 +10,10 @@ import sys
 import os
 
 # Add src to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.core.ultra_optimized_trading_system import UltraOptimizedTradingSystem
-from src.engines.ultra_scalping_engine import UltraScalpingEngine
+from core.improved_trading_system import ImprovedTradingSystem
+from engines.ultra_scalping_engine import UltraScalpingEngine
 
 async def basic_scalping_demo():
     """Basic scalping demonstration"""
@@ -26,7 +26,7 @@ async def basic_scalping_demo():
     
     # Initialize basic scalping system
     symbols = ['BTCUSDT', 'ETHUSDT']
-    system = UltraOptimizedTradingSystem()
+    system = ImprovedTradingSystem()
     
     print(f"📊 Monitoring {len(symbols)} symbols for scalping opportunities")
     print("🎯 Looking for:")
@@ -39,7 +39,8 @@ async def basic_scalping_demo():
     try:
         # Run for 30 seconds
         print("🚀 Starting scalping system (30 seconds)...")
-        await asyncio.wait_for(system.start_system(), timeout=30.0)
+        await system.initialize()
+        await asyncio.wait_for(system.monitor_data_only(), timeout=30.0)
         
     except asyncio.TimeoutError:
         print("\n⏰ Demo completed")

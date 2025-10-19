@@ -13,7 +13,7 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.core.real_trading_system import RealTradingSystem
+from core.improved_trading_system import ImprovedTradingSystem as RealTradingSystem
 
 async def main():
     """Monitor market data only"""
