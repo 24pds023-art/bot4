@@ -109,12 +109,12 @@ async def interactive_menu():
             if choice == '1':
                 print(f"\n⚠️  This will execute REAL trades!")
                 print(f"   Environment: {'TESTNET (Safe)' if system.use_testnet else '🚨 LIVE PRODUCTION (Real Money!) 🚨'}")
-                print(f"   Max Positions: {system.max_positions}")
-                print(f"   Max Daily Loss: ${system.risk_manager.max_daily_loss}")
+                print(f"   Max Positions: {system.risk_manager.max_positions if system.risk_manager else 'Not initialized'}")
+                print(f"   Max Daily Loss: ${system.risk_manager.max_daily_loss if system.risk_manager else 'Not initialized'}")
                 
                 confirm = input("Continue? (y/N): ").strip().lower()
                 if confirm == 'y':
-                    await system.start_real_trading()
+                    await system.start_trading()
                     break
                 else:
                     print("❌ Trading cancelled")
@@ -151,12 +151,16 @@ def print_system_info(system):
     print(f"WebSocket: {system.binance.ws_base}")
     print(f"Trading Symbols: {', '.join(system.symbols)}")
     print(f"Position Size: ${system.position_size_usd}")
-    print(f"Max Positions: {system.max_positions}")
-    print(f"Max Daily Loss: ${system.risk_manager.max_daily_loss}")
-    print(f"Risk Limits:")
-    print(f"  - Max Position Size: {system.risk_manager.max_position_size_pct*100:.1f}% of balance")
-    print(f"  - Max Total Exposure: {system.risk_manager.max_total_exposure_pct*100:.1f}% of balance")
-    print(f"  - Max Drawdown: {system.risk_manager.max_drawdown_pct*100:.1f}%")
+    
+    if system.risk_manager:
+        print(f"Max Positions: {system.risk_manager.max_positions}")
+        print(f"Max Daily Loss: ${system.risk_manager.max_daily_loss}")
+        print(f"Current Balance: ${system.risk_manager.current_balance:.2f}")
+        print(f"Daily P&L: ${system.risk_manager.daily_pnl:.2f}")
+        print(f"Total P&L: ${system.risk_manager.total_pnl:.2f}")
+    else:
+        print("Risk Manager: Not initialized")
+    
     print("="*50)
 
 async def main():
@@ -179,7 +183,7 @@ async def main():
             # Direct trading mode
             system = RealTradingSystem()
             await system.initialize()
-            await system.start_real_trading()
+            await system.start_trading()
             
         elif args.monitor:
             # Monitor only mode
