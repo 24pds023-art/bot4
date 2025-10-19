@@ -216,28 +216,46 @@ class RealBinanceConnector:
             try:
                 self.logger.info(f"🔗 Connecting to REAL ticker stream: {symbol}")
                 
-                async with websockets.connect(url, ping_interval=20) as ws:
+                async with websockets.connect(url, ping_interval=20, ping_timeout=10) as ws:
                     async for message in ws:
                         if not self.is_connected:
                             break
                         
-                        data = json.loads(message)
-                        
-                        # Create real tick data
-                        tick = RealTick(
-                            symbol=data['s'],
-                            price=float(data['c']),
-                            volume=float(data['v']),
-                            timestamp=int(time.time() * 1000),
-                            event_time=data['E'],
-                            bid=float(data['b']),
-                            ask=float(data['a']),
-                            spread=float(data['a']) - float(data['b'])
-                        )
-                        
-                        if self.tick_callback:
-                            await self.tick_callback(tick)
+                        try:
+                            # Handle both string and bytes messages
+                            if isinstance(message, bytes):
+                                message = message.decode('utf-8')
                             
+                            data = json.loads(message)
+                            
+                            # Validate required fields
+                            if not all(key in data for key in ['s', 'c', 'v', 'E', 'b', 'a']):
+                                self.logger.debug(f"Incomplete ticker data for {symbol}: {data}")
+                                continue
+                            
+                            # Create real tick data
+                            tick = RealTick(
+                                symbol=data['s'],
+                                price=float(data['c']),
+                                volume=float(data['v']),
+                                timestamp=int(time.time() * 1000),
+                                event_time=data['E'],
+                                bid=float(data['b']),
+                                ask=float(data['a']),
+                                spread=float(data['a']) - float(data['b'])
+                            )
+                            
+                            if self.tick_callback:
+                                await self.tick_callback(tick)
+                                
+                        except (json.JSONDecodeError, KeyError, ValueError) as e:
+                            self.logger.debug(f"Error parsing ticker message for {symbol}: {e}")
+                            continue
+                            
+            except websockets.exceptions.ConnectionClosed:
+                if self.is_connected:
+                    self.logger.warning(f"⚠️ WebSocket connection closed for {symbol}, reconnecting...")
+                    await asyncio.sleep(2)
             except Exception as e:
                 if self.is_connected:
                     self.logger.error(f"❌ WebSocket error for {symbol}: {e}")
@@ -252,16 +270,29 @@ class RealBinanceConnector:
             try:
                 self.logger.info(f"🔗 Connecting to REAL depth stream: {symbol}")
                 
-                async with websockets.connect(url, ping_interval=20) as ws:
+                async with websockets.connect(url, ping_interval=20, ping_timeout=10) as ws:
                     async for message in ws:
                         if not self.is_connected:
                             break
                         
-                        data = json.loads(message)
-                        
-                        if self.orderbook_callback:
-                            await self.orderbook_callback(symbol, data)
+                        try:
+                            # Handle both string and bytes messages
+                            if isinstance(message, bytes):
+                                message = message.decode('utf-8')
                             
+                            data = json.loads(message)
+                            
+                            if self.orderbook_callback:
+                                await self.orderbook_callback(symbol, data)
+                                
+                        except (json.JSONDecodeError, KeyError) as e:
+                            self.logger.debug(f"Error parsing depth message for {symbol}: {e}")
+                            continue
+                            
+            except websockets.exceptions.ConnectionClosed:
+                if self.is_connected:
+                    self.logger.warning(f"⚠️ Depth WebSocket connection closed for {symbol}, reconnecting...")
+                    await asyncio.sleep(2)
             except Exception as e:
                 if self.is_connected:
                     self.logger.error(f"❌ Depth stream error for {symbol}: {e}")

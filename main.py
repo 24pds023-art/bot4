@@ -24,11 +24,15 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 # Import with error handling
 try:
-    from core.real_trading_system import RealTradingSystem
+    from core.improved_trading_system import ImprovedTradingSystem as RealTradingSystem
 except ImportError as e:
-    print(f"❌ Import error: {e}")
-    print("🔧 Please install dependencies: pip install -r requirements.txt")
-    sys.exit(1)
+    try:
+        # Fallback to original system
+        from core.real_trading_system import RealTradingSystem
+    except ImportError:
+        print(f"❌ Import error: {e}")
+        print("🔧 Please install dependencies: pip install -r requirements.txt")
+        sys.exit(1)
 
 def print_banner():
     """Print system banner"""
