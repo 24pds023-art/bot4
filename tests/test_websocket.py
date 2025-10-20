@@ -8,9 +8,13 @@ Test the improved WebSocket connection
 import asyncio
 import sys
 from pathlib import Path
+import os
 
-# Add src to path
+# Add src to path (project root/src)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Default to mock/offline mode for test environments
+os.environ.setdefault('MOCK_BINANCE', 'true')
 
 from core.improved_trading_system import ImprovedTradingSystem
 

@@ -8,10 +8,14 @@ Comprehensive check of all system integrations
 import asyncio
 import sys
 import time
+import os
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add src to path (project root/src)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Default to mock/offline mode so this check runs without network credentials
+os.environ.setdefault('MOCK_BINANCE', 'true')
 
 async def check_system_health():
     """Comprehensive system health check"""

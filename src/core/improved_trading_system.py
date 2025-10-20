@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from dotenv import load_dotenv
 
-from .simple_binance_connector import SimpleBinanceConnector, SimpleScalpingSignals, SimpleTick
+from .simple_binance_connector import SimpleBinanceConnector, SimpleScalpingSignals, SimpleTick, MockSimpleBinanceConnector
 
 @dataclass
 class SimplePosition:
@@ -77,12 +77,25 @@ class ImprovedTradingSystem:
         self.api_key = os.getenv('BINANCE_TESTNET_API_KEY') or os.getenv('BINANCE_API_KEY')
         self.api_secret = os.getenv('BINANCE_TESTNET_API_SECRET') or os.getenv('BINANCE_API_SECRET')
         self.use_testnet = os.getenv('USE_TESTNET', 'true').lower() == 'true'
-        
-        if not self.api_key or not self.api_secret:
-            raise ValueError("❌ API credentials not found! Please configure .env file")
+
+        # Determine offline/mock mode BEFORE enforcing credentials
+        offline_mode = (
+            os.getenv('NO_NETWORK', 'false').lower() == 'true'
+            or os.getenv('OFFLINE', 'false').lower() == 'true'
+            or os.getenv('MOCK_BINANCE', 'false').lower() == 'true'
+        )
+
+        if (not self.api_key or not self.api_secret) and not offline_mode:
+            raise ValueError("❌ API credentials not found! Please configure .env file or set MOCK_BINANCE=true for offline mode")
         
         # Initialize components
-        self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
+        # Allow offline/mock mode when NO_NETWORK or OFFLINE is set, or when explicit
+        # MOCK_BINANCE=true. This enables local testing without API keys/connectivity.
+
+        if offline_mode:
+            self.binance = MockSimpleBinanceConnector(self.api_key or '', self.api_secret or '', True)
+        else:
+            self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
         self.scalping_engine = SimpleScalpingSignals()
         
         # Trading configuration

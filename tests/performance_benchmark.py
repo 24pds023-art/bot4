@@ -20,9 +20,13 @@ from dataclasses import dataclass
 import json
 import sys
 import os
+from pathlib import Path
+
+# Ensure project src is importable
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import optimized components
-from ultra_optimized_trading_system import (
+from core.legacy.ultra_optimized_trading_system import (
     ultra_fast_rsi, ultra_fast_ema, ultra_fast_macd, ultra_fast_bollinger_bands,
     ultra_fast_atr, calculate_signal_strength_jit, UltraFastIncrementalEngine
 )

@@ -15,12 +15,19 @@ from typing import Dict, List, Any
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import json
+import os
+from pathlib import Path
+
+# Ensure project src is importable and default to offline mode
+os.environ.setdefault('MOCK_BINANCE', 'true')
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import all our optimized modules
 try:
-    from ultra_scalping_engine import UltraScalpingEngine
-    from memory_pool_optimizer import AdvancedMemoryManager
-    from ultra_optimized_trading_system import UltraOptimizedTradingSystem
+    from engines.ultra_scalping_engine import UltraScalpingEngine
+    from optimizations.memory_pool_optimizer import AdvancedMemoryManager
+    from core.legacy.ultra_optimized_trading_system import UltraOptimizedTradingSystem
     MODULES_AVAILABLE = True
 except ImportError:
     MODULES_AVAILABLE = False
