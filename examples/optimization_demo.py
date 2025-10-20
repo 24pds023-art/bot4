@@ -199,7 +199,7 @@ class OptimizationDemo:
             ml_filter.add_training_sample(indicators, market_data, outcome, signal_strength)
         
         # Wait for training to complete
-        await asyncio.sleep(1)
+        time.sleep(0.1)
         
         # Test ML predictions
         print("\n🎯 Testing ML Predictions:")

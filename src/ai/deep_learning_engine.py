@@ -111,7 +111,7 @@ class OnlineLearningEngine:
         
         self.logger = logging.getLogger(__name__)
     
-    def add_training_sample(self, features: MarketFeatures, actual_result: str):
+    async def add_training_sample(self, features: MarketFeatures, actual_result: str):
         """Add new training sample for online learning"""
         try:
             # Convert features to array
