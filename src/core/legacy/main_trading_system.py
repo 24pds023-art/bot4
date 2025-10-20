@@ -3,7 +3,7 @@
 ==================================================================
 ⚡ MAXIMUM PERFORMANCE: 100x faster calculations, sub-microsecond latency
 🧠 MAXIMUM INTELLIGENCE: Deep learning, ML ensemble, adaptive thresholds
-💰 MAXIMUM PROFITABILITY: Multi-exchange arbitrage, advanced indicators
+💰 MAXIMUM PROFITABILITY: Ultra-fast scalping signals, optimal indicators
 🎯 MAXIMUM ACCURACY: 15-25% better win rates, professional-grade analysis
 
 COMPLETE FEATURE LIST:
@@ -14,7 +14,7 @@ COMPLETE FEATURE LIST:
 ✅ ML ensemble (LSTM, Transformer, CNN, Multi-modal)
 ✅ Adaptive thresholds with market regime detection
 ✅ Ultra-fast order execution with connection pooling
-✅ Multi-exchange arbitrage monitoring
+✅ Ultra-low latency scalping optimization
 ✅ Advanced technical indicators (50+ indicators)
 ✅ Market microstructure analysis (VPIN, order flow)
 ✅ Portfolio optimization with risk management
@@ -43,20 +43,22 @@ import threading
 import multiprocessing as mp
 
 # Import all our optimization modules
-from ultra_optimized_trading_system import (
+from .ultra_optimized_trading_system import (
     ultra_fast_rsi, ultra_fast_ema, ultra_fast_macd,
     UltraFastIncrementalEngine, AdaptiveMLSignalFilter, 
     AdaptiveThresholdManager
 )
-from fast_order_execution import UltraFastOrderExecution
-from advanced_optimizations import (
+from .fast_order_execution import UltraFastOrderExecution
+from ..optimizations.advanced_optimizations import (
     IntelligentRateLimiter, AdvancedIndicatorSuite,
     EnhancedMicrostructureAnalyzer, AdvancedMLSuite,
     AdvancedPortfolioOptimizer, UltraAdvancedTradingSystem
 )
-from deep_learning_models import DeepLearningTrainingManager
-from multi_exchange_arbitrage import ArbitrageEngine
-from ultra_low_latency import UltraLowLatencyEngine
+from ..engines.deep_learning_models import DeepLearningTrainingManager
+# Removed multi-exchange arbitrage - focusing on scalping only
+from ..optimizations.ultra_low_latency import UltraLowLatencyEngine
+from ..engines.ultra_scalping_engine import UltraScalpingEngine
+from ..optimizations.memory_pool_optimizer import AdvancedMemoryManager
 
 # Try to import high-performance libraries
 try:
@@ -95,13 +97,13 @@ class UltimateConfig:
     BASE_SIGNAL_STRENGTH_THRESHOLD: float = 0.22
     ML_CONFIDENCE_THRESHOLD: float = 0.70
     DEEP_LEARNING_THRESHOLD: float = 0.75
-    ARBITRAGE_MIN_PROFIT: float = 0.005  # 0.5%
+    # Removed arbitrage - focusing on scalping signals
     
     # Performance settings
     ENABLE_ALL_OPTIMIZATIONS: bool = True
     USE_ULTRA_LOW_LATENCY: bool = True
     USE_DEEP_LEARNING: bool = PYTORCH_AVAILABLE
-    USE_MULTI_EXCHANGE_ARBITRAGE: bool = True
+    USE_MULTI_EXCHANGE_ARBITRAGE: bool = False  # Disabled - scalping only
     USE_ADVANCED_INDICATORS: bool = True
     USE_PORTFOLIO_OPTIMIZATION: bool = True
     
@@ -137,14 +139,16 @@ class UltimateTradingSystem:
         self.ml_suite = None
         self.portfolio_optimizer = None
         self.deep_learning_manager = None
-        self.arbitrage_engine = None
+        # Removed arbitrage engine - scalping focused
         self.ultra_low_latency_engine = None
+        self.ultra_scalping_engine = None
+        self.memory_manager = None
         
         # Performance tracking
         self.performance_stats = {
             'signals_generated': 0,
             'trades_executed': 0,
-            'arbitrage_opportunities': 0,
+            'scalping_signals': 0,
             'total_pnl': 0.0,
             'start_time': time.time(),
             'processing_times': deque(maxlen=10000)
@@ -194,15 +198,21 @@ class UltimateTradingSystem:
                 print("   🤖 Deep Learning Manager...")
                 self.deep_learning_manager = DeepLearningTrainingManager()
             
-            # 8. Initialize arbitrage engine
-            if self.config.USE_MULTI_EXCHANGE_ARBITRAGE:
-                print("   🔄 Multi-Exchange Arbitrage Engine...")
-                self.arbitrage_engine = ArbitrageEngine(self.symbols)
+            # 8. Scalping optimization (arbitrage removed)
+            print("   ⚡ Scalping Signal Optimization...")
             
             # 9. Initialize ultra-low latency engine
             if self.config.USE_ULTRA_LOW_LATENCY:
                 print("   ⚡ Ultra-Low Latency Engine...")
                 self.ultra_low_latency_engine = UltraLowLatencyEngine(self.symbols)
+            
+            # 10. Initialize ultra-scalping engine
+            print("   🔥 Ultra-Advanced Scalping Engine...")
+            self.ultra_scalping_engine = UltraScalpingEngine(self.symbols)
+            
+            # 11. Initialize advanced memory manager
+            print("   💾 Advanced Memory Manager...")
+            self.memory_manager = AdvancedMemoryManager()
             
             print("✅ All systems initialized successfully!")
             return True
@@ -498,9 +508,8 @@ class UltimateTradingSystem:
             # 1. Market data processing loop
             tasks.append(asyncio.create_task(self._ultimate_market_data_loop()))
             
-            # 2. Arbitrage monitoring (if enabled)
-            if self.arbitrage_engine:
-                tasks.append(asyncio.create_task(self.arbitrage_engine.start_monitoring()))
+            # 2. Enhanced scalping signal processing
+            tasks.append(asyncio.create_task(self._enhanced_scalping_loop()))
             
             # 3. Performance monitoring
             tasks.append(asyncio.create_task(self._ultimate_performance_loop()))
@@ -584,6 +593,29 @@ class UltimateTradingSystem:
                 print(f"❌ Error in performance monitoring: {e}")
                 await asyncio.sleep(60)
     
+    async def _enhanced_scalping_loop(self):
+        """Enhanced scalping signal processing loop"""
+        while self.is_running:
+            try:
+                # Process ultra-fast scalping signals
+                for symbol in self.symbols:
+                    if self.ultra_low_latency_engine:
+                        # Get latest price from incremental engine
+                        indicators = self.incremental_engines[symbol].get_all_indicators()
+                        if indicators['current_price'] > 0:
+                            # Process with ultra-low latency
+                            signal = self.ultra_low_latency_engine.process_tick_ultra_fast(
+                                symbol, indicators['current_price']
+                            )
+                            if signal and abs(signal) > 0.5:  # Strong scalping signal
+                                self.performance_stats['scalping_signals'] += 1
+                
+                await asyncio.sleep(0.01)  # 10ms scalping cycle
+                
+            except Exception as e:
+                print(f"❌ Error in enhanced scalping loop: {e}")
+                await asyncio.sleep(1)
+
     async def _ultimate_risk_management_loop(self):
         """Ultimate risk management loop"""
         while self.is_running:
@@ -629,17 +661,15 @@ class UltimateTradingSystem:
                 print(f"🚀 ULL P99 Latency: {latency['p99']:.1f}μs")
                 print(f"🚀 ULL P99.9 Latency: {latency['p99_9']:.1f}μs")
         
-        # Arbitrage performance
-        if self.arbitrage_engine:
-            arb_stats = self.arbitrage_engine.get_arbitrage_statistics()
-            print(f"🔄 Arbitrage Opportunities: {arb_stats['opportunities_detected']}")
-            print(f"💰 Arbitrage Profit: ${arb_stats['total_profit']:.2f}")
+        # Scalping performance
+        print(f"⚡ Scalping Signals Generated: {self.performance_stats['scalping_signals']}")
+        print(f"🎯 Signal Processing Rate: {self.performance_stats['signals_generated']/max(uptime/3600, 1):.0f}/hour")
         
         # System optimization status
         print(f"🔧 Optimizations Enabled:")
         print(f"   Ultra-Low Latency: {'✅' if self.config.USE_ULTRA_LOW_LATENCY else '❌'}")
         print(f"   Deep Learning: {'✅' if self.config.USE_DEEP_LEARNING else '❌'}")
-        print(f"   Multi-Exchange Arbitrage: {'✅' if self.config.USE_MULTI_EXCHANGE_ARBITRAGE else '❌'}")
+        print(f"   Scalping Optimization: ✅")
         print(f"   Advanced Indicators: {'✅' if self.config.USE_ADVANCED_INDICATORS else '❌'}")
         print(f"   Portfolio Optimization: {'✅' if self.config.USE_PORTFOLIO_OPTIMIZATION else '❌'}")
         
@@ -656,7 +686,7 @@ class UltimateTradingSystem:
             'optimizations_enabled': {
                 'ultra_low_latency': self.config.USE_ULTRA_LOW_LATENCY,
                 'deep_learning': self.config.USE_DEEP_LEARNING,
-                'multi_exchange_arbitrage': self.config.USE_MULTI_EXCHANGE_ARBITRAGE,
+                'scalping_optimization': True,
                 'advanced_indicators': self.config.USE_ADVANCED_INDICATORS,
                 'portfolio_optimization': self.config.USE_PORTFOLIO_OPTIMIZATION,
                 'all_optimizations': self.config.ENABLE_ALL_OPTIMIZATIONS
@@ -667,8 +697,7 @@ class UltimateTradingSystem:
         if self.ultra_low_latency_engine:
             status['ull_performance'] = self.ultra_low_latency_engine.get_performance_metrics()
         
-        if self.arbitrage_engine:
-            status['arbitrage_stats'] = self.arbitrage_engine.get_arbitrage_statistics()
+        # Scalping-focused status (arbitrage removed)
         
         return status
     
@@ -683,8 +712,7 @@ class UltimateTradingSystem:
             self.active_positions.clear()
         
         # Cleanup subsystems
-        if self.arbitrage_engine:
-            await self.arbitrage_engine._cleanup()
+        # Scalping cleanup (arbitrage removed)
         
         print("✅ Ultimate cleanup complete")
 
@@ -701,7 +729,7 @@ async def run_ultimate_trading_system():
     print("📊 COMPLETE FEATURE SET:")
     print("   ⚡ Ultra-Low Latency: Sub-microsecond processing")
     print("   🧠 Deep Learning: LSTM, Transformer, CNN models")
-    print("   🔄 Multi-Exchange Arbitrage: Cross-exchange opportunities")
+    print("   ⚡ Ultra-Low Latency Scalping: Sub-millisecond signal processing")
     print("   📈 Advanced Indicators: 50+ professional indicators")
     print("   🎯 ML Ensemble: Multiple AI models working together")
     print("   💾 Zero-Copy Pipeline: Lock-free data structures")

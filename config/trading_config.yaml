@@ -1,0 +1,78 @@
+# ULTRA-FAST SCALPING TRADING SYSTEM CONFIGURATION
+# ================================================
+
+# Trading Parameters
+trading:
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT" 
+    - "BNBUSDT"
+    - "ADAUSDT"
+    - "XRPUSDT"
+  
+  position_size_usd: 50.0
+  max_positions: 3
+  leverage: 5
+  
+  # Signal thresholds
+  signal_strength_threshold: 0.6
+  min_signal_interval: 5.0  # seconds
+  momentum_threshold: 0.0008  # 0.08%
+  volume_spike_threshold: 1.5  # 50% above average
+
+# Risk Management
+risk:
+  max_daily_loss: 100.0
+  max_position_size_pct: 0.02  # 2% of balance
+  max_total_exposure_pct: 0.10  # 10% of balance
+  max_drawdown_pct: 0.05  # 5%
+  
+  # Stop loss and take profit
+  stop_loss_pct: 0.002  # 0.2%
+  take_profit_pct: 0.006  # 0.6%
+  
+  # Time limits
+  max_hold_time_minutes: 10
+  emergency_stop_multiplier: 1.5
+
+# Technical Indicators
+indicators:
+  # Moving averages
+  sma_periods: [5, 10, 20]
+  ema_period: 5
+  
+  # RSI
+  rsi_period: 14
+  rsi_oversold: 30
+  rsi_overbought: 70
+  
+  # Bollinger Bands
+  bb_period: 20
+  bb_std_dev: 2.0
+
+# System Performance
+performance:
+  # WebSocket settings
+  ping_interval: 20
+  reconnect_delay: 5
+  
+  # Monitoring intervals
+  exit_check_interval: 2  # seconds
+  performance_log_interval: 60  # seconds
+  risk_check_interval: 10  # seconds
+  
+  # Logging
+  log_level: "INFO"
+  log_to_file: true
+  log_rotation: "daily"
+
+# Environment
+environment:
+  use_testnet: true
+  api_timeout: 30
+  max_retries: 3
+  
+  # Data storage
+  save_trades: true
+  save_signals: true
+  backup_interval: 3600  # seconds

@@ -1,0 +1,119 @@
+# System Performance Configuration
+# ================================
+
+hardware:
+  # CPU optimization
+  cpu_cores: [0, 1, 2, 3]        # Dedicated CPU cores
+  cpu_affinity_enabled: true
+  process_priority: -10           # High priority (requires root)
+  cpu_governor: 'performance'     # CPU frequency scaling
+  
+  # Memory optimization
+  memory_pools_enabled: true
+  huge_pages_enabled: false       # Requires system configuration
+  numa_optimization: true
+  cache_alignment: 64             # CPU cache line size
+  prefault_memory: true           # Pre-fault all pages
+  
+  # Network optimization
+  socket_optimization: true
+  tcp_nodelay: true               # Disable Nagle's algorithm
+  socket_priority: 6              # High network priority
+  connection_pooling: true
+
+performance:
+  # Processing cycles
+  main_loop_cycle_ms: 100         # Main processing cycle
+  signal_processing_cycle_ms: 50  # Signal generation cycle
+  risk_check_cycle_ms: 1000      # Risk management cycle
+  
+  # Queue sizes (must be powers of 2)
+  tick_queue_size: 8192
+  signal_queue_size: 1024
+  order_queue_size: 512
+  
+  # Caching
+  cache_size: 2000
+  cache_hit_target: 0.95          # 95% cache hit rate target
+  lru_cache_enabled: true
+  
+  # Threading
+  max_worker_threads: 8
+  thread_pool_size: 4
+  async_batch_size: 100
+
+memory:
+  # Memory pools (sizes in bytes)
+  tick_pool_size: 67108864        # 64MB for tick data
+  signal_pool_size: 16777216      # 16MB for signals
+  orderbook_pool_size: 4194304    # 4MB for order book data
+  counter_pool_size: 65536        # 64KB for performance counters
+  
+  # Alignment and optimization
+  memory_alignment: 64            # Cache line alignment
+  zero_copy_enabled: true
+  lock_free_structures: true
+  atomic_operations: true
+
+networking:
+  # WebSocket settings
+  websocket_connections: 10       # Individual connections per symbol
+  ping_interval: 20               # WebSocket ping interval
+  ping_timeout: 10                # WebSocket ping timeout
+  reconnect_delay: 1.0            # Initial reconnect delay
+  max_reconnect_delay: 30.0       # Maximum reconnect delay
+  
+  # HTTP settings
+  http_timeout: 5.0               # HTTP request timeout
+  connection_pool_size: 100       # HTTP connection pool
+  max_retries: 3                  # Maximum request retries
+  backoff_factor: 0.3             # Exponential backoff factor
+  
+  # Rate limiting
+  requests_per_minute: 1200       # API rate limit
+  burst_capacity: 100             # Burst request capacity
+  priority_queues: true           # Use priority-based queuing
+
+monitoring:
+  # Performance monitoring
+  enable_performance_monitoring: true
+  metrics_collection_interval: 60    # Collect metrics every minute
+  metrics_retention_hours: 24        # Keep metrics for 24 hours
+  
+  # Latency tracking
+  track_latency: true
+  latency_percentiles: [50, 95, 99, 99.9]
+  latency_history_size: 10000
+  
+  # Resource monitoring
+  monitor_cpu_usage: true
+  monitor_memory_usage: true
+  monitor_network_usage: true
+  resource_alert_threshold: 80      # Alert at 80% usage
+
+logging:
+  # Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: 'INFO'
+  log_to_file: true
+  log_file_path: 'logs/trading_system.log'
+  log_rotation_size: '100MB'
+  log_retention_days: 7
+  
+  # Performance logging
+  log_performance_metrics: true
+  log_trade_executions: true
+  log_signal_generation: false     # Too verbose for production
+  log_risk_events: true
+
+development:
+  # Development and debugging
+  debug_mode: false
+  profiling_enabled: false
+  benchmark_mode: false
+  simulation_mode: false
+  
+  # Testing
+  enable_unit_tests: true
+  enable_integration_tests: true
+  enable_performance_tests: true
+  test_data_path: 'data/test/'
