@@ -22,6 +22,16 @@ pytest>=7.0.0
 black>=22.0.0
 flake8>=4.0.0
 
+# Web server extras
+aiohttp-cors>=0.7.0
+
+# Visualization (used in benchmarks)
+matplotlib>=3.5.0
+seaborn>=0.12.0
+
+# Optional performance (used by ultra engines)
+numba>=0.56.0
+
 # Optional GPU Support
 # cupy-cuda11x>=10.0.0
 

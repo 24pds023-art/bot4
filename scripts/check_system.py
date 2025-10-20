@@ -32,7 +32,8 @@ def check_dependencies():
         'aiohttp',
         'websockets', 
         'dotenv',
-        'yaml'
+        'yaml',
+        'aiohttp_cors'
     ]
     
     missing = []

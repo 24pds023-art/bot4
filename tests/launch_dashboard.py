@@ -9,8 +9,8 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add src to path (project root/src)
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.improved_trading_system import ImprovedTradingSystem
 from utils.real_time_dashboard import start_dashboard

@@ -7,14 +7,21 @@ Focuses on stability and error handling
 """
 
 import asyncio
-import aiohttp
-import websockets
+try:
+    import aiohttp  # type: ignore
+except Exception:
+    aiohttp = None  # Optional for offline/mock mode
+try:
+    import websockets  # type: ignore
+except Exception:
+    websockets = None  # Optional for offline/mock mode
 import json
 import time
 import hmac
 import hashlib
 import logging
 from typing import Dict, List, Any, Optional, Callable
+import inspect
 from dataclasses import dataclass
 from urllib.parse import urlencode
 from decimal import Decimal, getcontext
@@ -282,6 +289,89 @@ class SimpleBinanceConnector:
         if self.session:
             await self.session.close()
         self.logger.info("🔒 Simple Binance connector closed")
+
+class MockSimpleBinanceConnector:
+    """Offline mock connector for development and tests.
+
+    Simulates Binance behaviors without any network access so tests can run
+    in environments without API keys or internet connectivity.
+    """
+
+    def __init__(self, api_key: str = "", api_secret: str = "", testnet: bool = True):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.testnet = testnet
+        self.is_connected = False
+        self.tick_callback: Optional[Callable] = None
+        self.logger = logging.getLogger(__name__)
+        self._prices: Dict[str, float] = {}
+
+    async def initialize(self):
+        """Initialize mock connection (no-op)."""
+        self.is_connected = True
+        self.logger.info("🧪 Mock Binance connector initialized (offline mode)")
+
+    async def get_account_balance(self) -> float:
+        """Return a deterministic mock balance."""
+        return 10000.0
+
+    async def place_market_order(self, symbol: str, side: str, quantity: float):
+        """Simulate order placement and return a mock response."""
+        self.logger.info(f"🧪 MOCK ORDER: {symbol} {side} {quantity}")
+        return {
+            'symbol': symbol,
+            'side': side.upper(),
+            'type': 'MARKET',
+            'origQty': str(quantity),
+            'status': 'FILLED',
+            'clientOrderId': 'mock-order',
+            'orderId': 1,
+        }
+
+    async def start_simple_stream(self, symbols: List[str]):
+        """Generate synthetic ticker updates at ~10Hz for provided symbols."""
+        self.logger.info(f"🧪 Starting MOCK stream for {len(symbols)} symbols")
+        # Initialize base prices
+        for symbol in symbols:
+            self._prices.setdefault(symbol, 50000.0 if symbol.upper().startswith('BTC') else 3000.0)
+
+        self.is_connected = True
+        try:
+            while self.is_connected:
+                start_time = time.time()
+                for symbol in symbols:
+                    base = self._prices[symbol]
+                    # Small random walk
+                    delta = (0.5 - (time.time() * 1000 % 10) / 10.0) * 0.5
+                    price = max(1.0, base + delta)
+                    self._prices[symbol] = price
+
+                    tick = SimpleTick(
+                        symbol=symbol,
+                        price=float(price),
+                        volume=1.0,
+                        timestamp=int(time.time() * 1000),
+                        change_24h=0.0,
+                        high_24h=price * 1.01,
+                        low_24h=price * 0.99,
+                    )
+
+                    if self.tick_callback:
+                        # Support both async and sync callbacks
+                        if inspect.iscoroutinefunction(self.tick_callback):
+                            await self.tick_callback(tick)
+                        else:
+                            self.tick_callback(tick)
+
+                # Target ~10 updates/sec
+                elapsed = time.time() - start_time
+                await asyncio.sleep(max(0.0, 0.1 - elapsed))
+        except asyncio.CancelledError:
+            pass
+
+    async def close(self):
+        self.is_connected = False
+        self.logger.info("🧪 Mock Binance connector closed")
 
 class SimpleScalpingSignals:
     """Simple but effective scalping signal generator"""
