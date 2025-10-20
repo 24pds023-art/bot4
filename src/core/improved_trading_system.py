@@ -143,6 +143,10 @@ class ImprovedTradingSystem:
             # Update positions
             if tick.symbol in self.positions:
                 self.positions[tick.symbol].update_pnl(tick.price)
+                
+                # Notify dashboard of position update if it exists
+                if hasattr(self, 'dashboard'):
+                    await self._notify_dashboard_update()
             
             # Generate signals if trading
             if self.is_trading:
@@ -151,8 +155,35 @@ class ImprovedTradingSystem:
                 if signal and signal['strength'] > 0.6:
                     await self._process_signal(tick.symbol, signal, tick.price)
                     
+                    # Notify dashboard of new signal
+                    if hasattr(self, 'dashboard'):
+                        await self._notify_dashboard_signal(tick.symbol, signal)
+                    
         except Exception as e:
             self.logger.error(f"❌ Error processing tick for {tick.symbol}: {e}")
+    
+    async def _notify_dashboard_update(self):
+        """Notify dashboard of updates"""
+        try:
+            if hasattr(self, 'dashboard') and self.dashboard:
+                # Dashboard will pull updates on its own schedule
+                pass
+        except Exception as e:
+            self.logger.debug(f"Dashboard notification error: {e}")
+    
+    async def _notify_dashboard_signal(self, symbol: str, signal: Dict):
+        """Notify dashboard of new signal"""
+        try:
+            if hasattr(self, 'dashboard') and self.dashboard:
+                signal_data = {
+                    'symbol': symbol,
+                    'signal_type': signal['signal_type'],
+                    'strength': signal['strength'],
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.dashboard.signal_history.append(signal_data)
+        except Exception as e:
+            self.logger.debug(f"Dashboard signal notification error: {e}")
     
     async def _process_signal(self, symbol: str, signal: Dict, current_price: float):
         """Process trading signal"""

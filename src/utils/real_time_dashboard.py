@@ -694,28 +694,35 @@ class RealTimeTradingDashboard:
                     'entry_time': position.entry_time.isoformat()
                 })
             
-            # Get recent signals
-            recent_signals = []
-            if hasattr(self.trading_system.scalping_engine, 'signal_count'):
-                # Create mock recent signals for demonstration
-                for i in range(min(5, self.trading_system.scalping_engine.signal_count)):
-                    recent_signals.append({
-                        'symbol': 'BTCUSDT',
-                        'signal_type': 'BUY' if i % 2 == 0 else 'SELL',
-                        'strength': 0.7 + (i * 0.05),
-                        'timestamp': (datetime.now() - timedelta(minutes=i*2)).isoformat()
-                    })
+            # Get recent signals from history
+            recent_signals = list(self.signal_history)
             
             # Calculate win rate
             win_rate = 0.0
             if self.trading_system.total_trades > 0:
                 win_rate = self.trading_system.winning_trades / self.trading_system.total_trades
             
+            # Get risk manager data
+            risk_data = {}
+            if self.trading_system.risk_manager:
+                risk_data = {
+                    'current_balance': self.trading_system.risk_manager.current_balance,
+                    'daily_pnl': self.trading_system.risk_manager.daily_pnl,
+                    'total_pnl': self.trading_system.risk_manager.total_pnl,
+                }
+            else:
+                risk_data = {
+                    'current_balance': 0,
+                    'daily_pnl': 0,
+                    'total_pnl': total_pnl,
+                }
+            
             return {
                 'timestamp': datetime.now().isoformat(),
                 'environment': 'TESTNET' if self.trading_system.use_testnet else 'LIVE',
-                'balance': self.trading_system.risk_manager.current_balance if self.trading_system.risk_manager else 0,
-                'total_pnl': total_pnl,
+                'balance': risk_data['current_balance'],
+                'total_pnl': risk_data['total_pnl'],
+                'daily_pnl': risk_data['daily_pnl'],
                 'active_positions': len(positions),
                 'positions': positions,
                 'signals_generated': self.trading_system.scalping_engine.signal_count if hasattr(self.trading_system.scalping_engine, 'signal_count') else 0,
@@ -724,16 +731,21 @@ class RealTimeTradingDashboard:
                 'win_rate': win_rate,
                 'recent_signals': recent_signals,
                 'is_trading': self.trading_system.is_trading,
-                'uptime': str(datetime.now() - self.start_time)
+                'uptime': str(datetime.now() - self.start_time),
+                'update_count': self.update_count,
+                'connected_clients': len(self.websocket_connections)
             }
         except Exception as e:
-            self.logger.error(f"Error getting system status: {e}")
+            self.logger.error(f"Error getting system status: {e}", exc_info=True)
             return {
                 'error': str(e),
                 'timestamp': datetime.now().isoformat(),
                 'balance': 0,
                 'active_positions': 0,
-                'positions': []
+                'positions': [],
+                'total_pnl': 0,
+                'signals_generated': 0,
+                'total_trades': 0
             }
     
     async def broadcast_update(self, data: Dict[str, Any]):
@@ -782,14 +794,33 @@ class RealTimeTradingDashboard:
     
     async def start_update_loop(self):
         """Start the update loop"""
+        self.logger.info("📡 Dashboard update loop started")
+        
         while True:
             try:
-                if self.websocket_connections:
-                    status = await self._get_system_status()
-                    await self.broadcast_update(status)
+                # Always get status to update history
+                status = await self._get_system_status()
                 
-                # Update every 2 seconds when clients connected
-                await asyncio.sleep(2.0 if self.websocket_connections else 10.0)
+                # Add to price and P&L history
+                if status.get('total_pnl') is not None:
+                    self.pnl_history.append({
+                        'timestamp': datetime.now().isoformat(),
+                        'pnl': status['total_pnl']
+                    })
+                
+                # Add signal history if there are signals
+                if status.get('recent_signals'):
+                    for signal in status.get('recent_signals', []):
+                        if signal not in self.signal_history:
+                            self.signal_history.append(signal)
+                
+                # Broadcast to connected clients
+                if self.websocket_connections:
+                    await self.broadcast_update(status)
+                    self.logger.debug(f"📤 Broadcast to {len(self.websocket_connections)} clients")
+                
+                # Update every 1 second for real-time feel
+                await asyncio.sleep(1.0)
                 
             except Exception as e:
                 self.logger.error(f"Error in update loop: {e}")
@@ -800,10 +831,15 @@ async def start_dashboard(trading_system, port: int = 8080):
     """Start the dashboard for a trading system"""
     dashboard = RealTimeTradingDashboard(trading_system, port)
     
+    # Link dashboard to trading system for notifications
+    trading_system.dashboard = dashboard
+    
     # Start server
     runner = await dashboard.start_server()
     
     # Start update loop
     update_task = asyncio.create_task(dashboard.start_update_loop())
+    
+    dashboard.logger.info(f"✅ Dashboard fully initialized and linked to trading system")
     
     return dashboard, runner, update_task
