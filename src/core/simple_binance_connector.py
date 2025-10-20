@@ -292,10 +292,10 @@ class SimpleScalpingSignals:
         self.signal_count = 0
         self.last_signal_time = {}
         
-        # Simple parameters
-        self.min_signal_interval = 10.0  # 10 seconds between signals
-        self.momentum_threshold = 0.001  # 0.1% momentum
-        self.volume_threshold = 1.3  # 30% above average
+        # Optimized parameters for higher win rate
+        self.min_signal_interval = 15.0  # 15 seconds between signals (reduce false signals)
+        self.momentum_threshold = 0.0015  # 0.15% momentum (stronger signals only)
+        self.volume_threshold = 1.5  # 50% above average (require strong volume confirmation)
         
         self.logger = logging.getLogger(__name__)
     
@@ -343,56 +343,60 @@ class SimpleScalpingSignals:
         sma_short = sum(prices[-3:]) / 3 if len(prices) >= 3 else price
         sma_long = sum(prices[-10:]) / 10 if len(prices) >= 10 else price
         
-        # Generate signal
+        # Generate signal with optimized criteria for higher win rate
         signal_strength = 0.0
         signal_type = None
         reasoning = []
         
-        # Momentum signal
+        # Momentum signal (more conservative)
         if momentum > self.momentum_threshold:
-            signal_strength += 0.4
+            signal_strength += 0.35
             signal_type = 'BUY'
             reasoning.append(f'Positive momentum: {momentum:.4f}')
         elif momentum < -self.momentum_threshold:
-            signal_strength += 0.4
+            signal_strength += 0.35
             signal_type = 'SELL'
             reasoning.append(f'Negative momentum: {momentum:.4f}')
         
-        # Moving average signal
+        # Moving average signal (stronger weight)
         if price > sma_short > sma_long and signal_type == 'BUY':
-            signal_strength += 0.2
+            signal_strength += 0.25
             reasoning.append('MA bullish alignment')
         elif price < sma_short < sma_long and signal_type == 'SELL':
-            signal_strength += 0.2
+            signal_strength += 0.25
             reasoning.append('MA bearish alignment')
         
-        # Volume confirmation
+        # Volume confirmation (required for high quality)
         if volume_ratio > self.volume_threshold:
-            signal_strength += 0.2
+            signal_strength += 0.25
             reasoning.append(f'Volume spike: {volume_ratio:.2f}x')
+        else:
+            # Reduce strength if no volume confirmation
+            signal_strength *= 0.6
         
-        # 24h change confirmation
+        # 24h change confirmation (bonus)
         if tick.change_24h > 2.0 and signal_type == 'BUY':
-            signal_strength += 0.1
+            signal_strength += 0.15
             reasoning.append(f'Strong 24h gain: {tick.change_24h:.1f}%')
         elif tick.change_24h < -2.0 and signal_type == 'SELL':
-            signal_strength += 0.1
+            signal_strength += 0.15
             reasoning.append(f'Strong 24h drop: {tick.change_24h:.1f}%')
         
-        # Minimum signal strength
-        if signal_strength < 0.5 or not signal_type:
+        # Minimum signal strength (higher threshold for quality)
+        if signal_strength < 0.65 or not signal_type:
             return None
         
         # Generate signal
         self.signal_count += 1
         self.last_signal_time[symbol] = current_time
         
+        # Optimized stop/profit for better risk/reward
         if signal_type == 'BUY':
-            stop_loss = price * 0.998  # 0.2% stop
-            take_profit = price * 1.006  # 0.6% profit
+            stop_loss = price * 0.997  # 0.3% stop (wider for volatility)
+            take_profit = price * 1.009  # 0.9% profit (better R:R ratio)
         else:
-            stop_loss = price * 1.002
-            take_profit = price * 0.994
+            stop_loss = price * 1.003  # 0.3% stop
+            take_profit = price * 0.991  # 0.9% profit
         
         return {
             'signal_type': signal_type,

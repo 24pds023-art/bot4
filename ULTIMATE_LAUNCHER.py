@@ -247,8 +247,8 @@ class UltimateAutomatedTradingSystem:
                     if prediction:
                         self.system_metrics['ai_predictions'] += 1
                         
-                        # Store prediction for dashboard
-                        if self.dashboard:
+                        # Store prediction for dashboard (only if dashboard supports AI)
+                        if self.dashboard and hasattr(self.dashboard, 'ai_predictions'):
                             self.dashboard.ai_predictions.append({
                                 'symbol': symbol,
                                 'signal': prediction.signal,
@@ -258,8 +258,8 @@ class UltimateAutomatedTradingSystem:
                                 'timestamp': prediction.timestamp.isoformat()
                             })
                 
-                # Update model performance metrics
-                if len(self.dashboard.ai_predictions) > 0 and self.dashboard:
+                # Update model performance metrics (only if dashboard supports it)
+                if self.dashboard and hasattr(self.dashboard, 'model_performance'):
                     performance = self.ai_engine.get_model_performance()
                     self.dashboard.model_performance.append({
                         'timestamp': time.time(),

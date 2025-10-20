@@ -85,8 +85,21 @@ class ImprovedTradingSystem:
         self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
         self.scalping_engine = SimpleScalpingSignals()
         
-        # Trading configuration
-        self.symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT']
+        # Trading configuration - Extended to 30 symbols for diversification
+        self.symbols = [
+            # Major cryptocurrencies
+            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+            'DOGEUSDT', 'SOLUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT',
+            # DeFi tokens
+            'AVAXUSDT', 'LINKUSDT', 'UNIUSDT', 'ATOMUSDT', 'ETCUSDT',
+            # Layer 1/2
+            'NEARUSDT', 'ALGOUSDT', 'VETUSDT', 'FTMUSDT', 'SANDUSDT',
+            # Meme/Popular
+            'SHIBUSDT', 'PEPEUSDT', 'FLOKIUSDT',
+            # Others
+            'APTUSDT', 'ARBUSDT', 'OPUSDT', 'INJUSDT', 'SUIUSDT',
+            'RNDRUSDT', 'STXUSDT'
+        ]
         self.position_size_usd = float(os.getenv('BASE_POSITION_USD', 50))
         
         # Trading state
