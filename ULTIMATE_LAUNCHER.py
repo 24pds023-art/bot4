@@ -45,16 +45,19 @@ try:
 except ImportError:
     AI_AVAILABLE = False
 
-# Dashboard imports
+# Dashboard imports - Use real-time dashboard (fixed version)
 try:
-    from ui.advanced_dashboard import start_advanced_dashboard
+    from utils.real_time_dashboard import start_dashboard
     DASHBOARD_AVAILABLE = True
+    DASHBOARD_TYPE = "real_time"
 except ImportError:
     try:
-        from utils.real_time_dashboard import start_dashboard
+        from ui.advanced_dashboard import start_advanced_dashboard
         DASHBOARD_AVAILABLE = True
+        DASHBOARD_TYPE = "advanced"
     except ImportError:
         DASHBOARD_AVAILABLE = False
+        DASHBOARD_TYPE = None
 
 class UltimateAutomatedTradingSystem:
     """Ultimate automated trading system with everything integrated"""
@@ -128,23 +131,35 @@ class UltimateAutomatedTradingSystem:
             try:
                 self.ai_engine = DeepLearningTradingEngine(self.trading_system.symbols)
                 self.logger.info("🧠 AI engine initialized")
+                
+                # Try to load previous models (for continuity)
+                model_files = ['data/models/final_save.pkl', 'data/models/auto_save.pkl']
+                loaded = False
+                for model_file in model_files:
+                    if Path(model_file).exists():
+                        loaded = await self.ai_engine.load_models(model_file)
+                        if loaded:
+                            self.logger.info(f"✅ Continuing from previous session: {model_file}")
+                            break
+                
+                if not loaded:
+                    self.logger.info("🆕 Starting fresh AI training session")
+                    
             except Exception as e:
                 self.logger.warning(f"⚠️ AI engine initialization failed: {e}")
                 self.ai_engine = None
         
-        # Initialize dashboard if available
+        # Initialize dashboard if available (always use real-time dashboard - it's fixed and working)
         if DASHBOARD_AVAILABLE:
             try:
-                if AI_AVAILABLE and self.ai_engine:
-                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_advanced_dashboard(
-                        self.trading_system, self.ai_engine, port=8080
-                    )
-                else:
-                    from utils.real_time_dashboard import start_dashboard
-                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
-                        self.trading_system, port=8080
-                    )
-                self.logger.info("🌐 Dashboard initialized at http://localhost:8080")
+                from utils.real_time_dashboard import start_dashboard
+                self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
+                    self.trading_system, port=8080
+                )
+                self.logger.info("🌐 Real-Time Dashboard initialized at http://localhost:8080")
+                self.logger.info("   ✅ WebSocket updates every 1 second")
+                self.logger.info("   ✅ Live signal feed enabled")
+                self.logger.info("   ✅ Position tracking active")
             except Exception as e:
                 self.logger.warning(f"⚠️ Dashboard initialization failed: {e}")
                 self.dashboard = None

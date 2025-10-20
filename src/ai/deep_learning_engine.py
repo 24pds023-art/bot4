@@ -642,28 +642,37 @@ class DeepLearningTradingEngine:
     async def save_models(self, filepath: str):
         """Save trained models to disk"""
         try:
+            # Create directory if it doesn't exist
+            Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+            
             model_data = {
                 'ensemble_models': self.ensemble_models,
                 'model_weights': self.model_weights,
                 'scalers': self.scalers,
                 'performance': self.get_model_performance(),
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'online_learner_buffer': {
+                    'features': list(self.online_learner.feature_buffer),
+                    'labels': list(self.online_learner.label_buffer)
+                }
             }
             
             with open(filepath, 'wb') as f:
                 pickle.dump(model_data, f)
                 
             self.logger.info(f"💾 Models saved to {filepath}")
+            self.logger.info(f"   📊 {self.predictions_made} predictions, {self.correct_predictions} correct")
+            self.logger.info(f"   🎯 Accuracy: {(self.correct_predictions / max(self.predictions_made, 1) * 100):.1f}%")
             
         except Exception as e:
-            self.logger.error(f"Error saving models: {e}")
+            self.logger.error(f"Error saving models: {e}", exc_info=True)
     
     async def load_models(self, filepath: str):
         """Load trained models from disk"""
         try:
             if not Path(filepath).exists():
-                self.logger.warning(f"Model file {filepath} not found")
-                return
+                self.logger.info(f"📂 No saved models found at {filepath} - starting fresh")
+                return False
             
             with open(filepath, 'rb') as f:
                 model_data = pickle.load(f)
@@ -672,7 +681,24 @@ class DeepLearningTradingEngine:
             self.model_weights = model_data.get('model_weights', {})
             self.scalers = model_data.get('scalers', {})
             
+            # Restore online learner buffer
+            if 'online_learner_buffer' in model_data:
+                buffer_data = model_data['online_learner_buffer']
+                self.online_learner.feature_buffer.extend(buffer_data.get('features', []))
+                self.online_learner.label_buffer.extend(buffer_data.get('labels', []))
+            
+            # Restore performance metrics
+            if 'performance' in model_data:
+                perf = model_data['performance']
+                self.predictions_made = perf.get('total_predictions', 0)
+                self.correct_predictions = perf.get('correct_predictions', 0)
+            
             self.logger.info(f"📂 Models loaded from {filepath}")
+            self.logger.info(f"   ✅ Continuing from {self.predictions_made} predictions")
+            self.logger.info(f"   ✅ Buffer size: {len(self.online_learner.feature_buffer)} samples")
+            
+            return True
             
         except Exception as e:
-            self.logger.error(f"Error loading models: {e}")
+            self.logger.error(f"Error loading models: {e}", exc_info=True)
+            return False
