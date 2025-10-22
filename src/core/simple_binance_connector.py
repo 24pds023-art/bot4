@@ -116,15 +116,32 @@ class SimpleBinanceConnector:
     async def place_market_order(self, symbol: str, side: str, quantity: float):
         """Place market order with improved error handling"""
         try:
-            # Round quantity to appropriate precision
-            if symbol in ['BTCUSDT', 'ETHUSDT']:
-                quantity = round(quantity, 3)
-            else:
-                quantity = round(quantity, 2)
+            # Round quantity to appropriate precision based on Binance requirements
+            symbol_precision = {
+                'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'SOLUSDT': 1, 'XRPUSDT': 1,
+                'ADAUSDT': 0, 'DOTUSDT': 1, 'LINKUSDT': 2, 'MATICUSDT': 0, 'UNIUSDT': 2,
+                'LTCUSDT': 2, 'ETCUSDT': 1, 'ARBUSDT': 0, 'OPUSDT': 0, 'AVAXUSDT': 2,
+                'ATOMUSDT': 2, 'FILUSDT': 2, 'APTUSDT': 1, 'INJUSDT': 1, 'NEARUSDT': 1,
+                'SUIUSDT': 1, 'PEPEUSDT': 0, 'SHIBUSDT': 0, 'DOGEUSDT': 0, 'WIFUSDT': 0,
+                'FLOKIUSDT': 0, 'BONKUSDT': 0, 'RENDERUSDT': 2, 'SANDUSDT': 0, 'MANAUSDT': 0,
+                'ALGOUSDT': 0  # ALGO needs whole numbers
+            }
             
-            # Ensure minimum quantity
-            if quantity < 0.001:
-                raise Exception(f"Quantity too small: {quantity}")
+            precision = symbol_precision.get(symbol, 1)  # Default to 1 decimal (safer)
+            
+            # Apply precision rounding with proper float handling
+            from decimal import Decimal, ROUND_DOWN
+            qty_decimal = Decimal(str(quantity))
+            if precision == 0:
+                quantity = float(qty_decimal.quantize(Decimal('1'), rounding=ROUND_DOWN))
+            else:
+                quantize_val = Decimal('0.1') ** precision
+                quantity = float(qty_decimal.quantize(quantize_val, rounding=ROUND_DOWN))
+            
+            # Ensure minimum quantity (1 for whole number symbols, 0.01 for others)
+            min_qty = 1 if precision == 0 else 0.01
+            if quantity < min_qty:
+                raise Exception(f"Quantity too small: {quantity} (min: {min_qty})")
             
             params = {
                 'symbol': symbol,
@@ -292,10 +309,10 @@ class SimpleScalpingSignals:
         self.signal_count = 0
         self.last_signal_time = {}
         
-        # Simple parameters
+        # Balanced parameters for good win rate with sufficient signals
         self.min_signal_interval = 10.0  # 10 seconds between signals
-        self.momentum_threshold = 0.001  # 0.1% momentum
-        self.volume_threshold = 1.3  # 30% above average
+        self.momentum_threshold = 0.0012  # 0.12% momentum (balanced)
+        self.volume_threshold = 1.4  # 40% above average (balanced confirmation)
         
         self.logger = logging.getLogger(__name__)
     
@@ -343,12 +360,12 @@ class SimpleScalpingSignals:
         sma_short = sum(prices[-3:]) / 3 if len(prices) >= 3 else price
         sma_long = sum(prices[-10:]) / 10 if len(prices) >= 10 else price
         
-        # Generate signal
+        # Generate signal with BALANCED criteria (quality + quantity)
         signal_strength = 0.0
         signal_type = None
         reasoning = []
         
-        # Momentum signal
+        # Momentum signal (primary driver)
         if momentum > self.momentum_threshold:
             signal_strength += 0.4
             signal_type = 'BUY'
@@ -358,41 +375,45 @@ class SimpleScalpingSignals:
             signal_type = 'SELL'
             reasoning.append(f'Negative momentum: {momentum:.4f}')
         
-        # Moving average signal
+        # Moving average signal (important confirmation)
         if price > sma_short > sma_long and signal_type == 'BUY':
-            signal_strength += 0.2
+            signal_strength += 0.25
             reasoning.append('MA bullish alignment')
         elif price < sma_short < sma_long and signal_type == 'SELL':
-            signal_strength += 0.2
+            signal_strength += 0.25
             reasoning.append('MA bearish alignment')
         
-        # Volume confirmation
+        # Volume confirmation (nice to have, not required)
         if volume_ratio > self.volume_threshold:
-            signal_strength += 0.2
+            signal_strength += 0.20
             reasoning.append(f'Volume spike: {volume_ratio:.2f}x')
+        elif volume_ratio > 1.2:  # Lower threshold still adds some value
+            signal_strength += 0.10
+            reasoning.append(f'Volume elevated: {volume_ratio:.2f}x')
         
-        # 24h change confirmation
-        if tick.change_24h > 2.0 and signal_type == 'BUY':
-            signal_strength += 0.1
-            reasoning.append(f'Strong 24h gain: {tick.change_24h:.1f}%')
-        elif tick.change_24h < -2.0 and signal_type == 'SELL':
-            signal_strength += 0.1
-            reasoning.append(f'Strong 24h drop: {tick.change_24h:.1f}%')
+        # 24h change confirmation (bonus)
+        if tick.change_24h > 1.5 and signal_type == 'BUY':
+            signal_strength += 0.10
+            reasoning.append(f'24h gain: {tick.change_24h:.1f}%')
+        elif tick.change_24h < -1.5 and signal_type == 'SELL':
+            signal_strength += 0.10
+            reasoning.append(f'24h drop: {tick.change_24h:.1f}%')
         
-        # Minimum signal strength
-        if signal_strength < 0.5 or not signal_type:
+        # STRICT threshold for quality trades (was 0.55 - way too low!)
+        if signal_strength < 0.75 or not signal_type:
             return None
         
         # Generate signal
         self.signal_count += 1
         self.last_signal_time[symbol] = current_time
         
+        # Balanced stop/profit for crypto scalping
         if signal_type == 'BUY':
-            stop_loss = price * 0.998  # 0.2% stop
-            take_profit = price * 1.006  # 0.6% profit
+            stop_loss = price * 0.9975  # 0.25% stop
+            take_profit = price * 1.0075  # 0.75% profit (1:3 R:R)
         else:
-            stop_loss = price * 1.002
-            take_profit = price * 0.994
+            stop_loss = price * 1.0025  # 0.25% stop
+            take_profit = price * 0.9925  # 0.75% profit
         
         return {
             'signal_type': signal_type,
@@ -405,4 +426,5 @@ class SimpleScalpingSignals:
             'momentum': momentum,
             'volume_ratio': volume_ratio,
             'change_24h': tick.change_24h
+        
         }

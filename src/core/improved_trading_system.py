@@ -48,7 +48,7 @@ class SimpleRiskManager:
         self.max_daily_loss = max_daily_loss
         self.daily_pnl = 0.0
         self.total_pnl = 0.0
-        self.max_positions = 3
+        self.max_positions = 5  # Increased for diversification with 30 symbols
         
     def can_open_position(self, position_size: float, current_positions: int) -> bool:
         """Check if position can be opened"""
@@ -69,7 +69,7 @@ class SimpleRiskManager:
 class ImprovedTradingSystem:
     """Improved, simplified trading system"""
     
-    def __init__(self):
+    def __init__(self, ai_engine=None):
         # Load environment
         load_dotenv()
         
@@ -81,12 +81,28 @@ class ImprovedTradingSystem:
         if not self.api_key or not self.api_secret:
             raise ValueError("❌ API credentials not found! Please configure .env file")
         
+        # AI engine for training (CRITICAL FIX!)
+        self.ai_engine = ai_engine
+        
         # Initialize components
         self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
         self.scalping_engine = SimpleScalpingSignals()
         
-        # Trading configuration
-        self.symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT']
+        # Trading configuration - Extended to 30 symbols for diversification
+        self.symbols = [
+            # Major cryptocurrencies
+            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+            'DOGEUSDT', 'SOLUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT',
+            # DeFi tokens
+            'AVAXUSDT', 'LINKUSDT', 'UNIUSDT', 'ATOMUSDT', 'ETCUSDT',
+            # Layer 1/2
+            'NEARUSDT', 'ALGOUSDT', 'VETUSDT', 'FTMUSDT', 'SANDUSDT',
+            # Meme/Popular
+            'SHIBUSDT', 'PEPEUSDT', 'FLOKIUSDT',
+            # Others
+            'APTUSDT', 'ARBUSDT', 'OPUSDT', 'INJUSDT', 'SUIUSDT',
+            'RNDRUSDT', 'STXUSDT'
+        ]
         self.position_size_usd = float(os.getenv('BASE_POSITION_USD', 50))
         
         # Trading state
@@ -143,16 +159,48 @@ class ImprovedTradingSystem:
             # Update positions
             if tick.symbol in self.positions:
                 self.positions[tick.symbol].update_pnl(tick.price)
+                
+                # Notify dashboard of position update if it exists
+                if hasattr(self, 'dashboard'):
+                    await self._notify_dashboard_update()
             
             # Generate signals if trading
             if self.is_trading:
                 signal = self.scalping_engine.process_tick(tick)
                 
-                if signal and signal['strength'] > 0.6:
+                # STRICT: Only trade high-quality signals (was 0.55 - too low!)
+                if signal and signal['strength'] >= 0.75:
                     await self._process_signal(tick.symbol, signal, tick.price)
+                    
+                    # Notify dashboard of new signal
+                    if hasattr(self, 'dashboard'):
+                        await self._notify_dashboard_signal(tick.symbol, signal)
                     
         except Exception as e:
             self.logger.error(f"❌ Error processing tick for {tick.symbol}: {e}")
+    
+    async def _notify_dashboard_update(self):
+        """Notify dashboard of updates"""
+        try:
+            if hasattr(self, 'dashboard') and self.dashboard:
+                # Dashboard will pull updates on its own schedule
+                pass
+        except Exception as e:
+            self.logger.debug(f"Dashboard notification error: {e}")
+    
+    async def _notify_dashboard_signal(self, symbol: str, signal: Dict):
+        """Notify dashboard of new signal"""
+        try:
+            if hasattr(self, 'dashboard') and self.dashboard:
+                signal_data = {
+                    'symbol': symbol,
+                    'signal_type': signal['signal_type'],
+                    'strength': signal['strength'],
+                    'timestamp': datetime.now().isoformat()
+                }
+                self.dashboard.signal_history.append(signal_data)
+        except Exception as e:
+            self.logger.debug(f"Dashboard signal notification error: {e}")
     
     async def _process_signal(self, symbol: str, signal: Dict, current_price: float):
         """Process trading signal"""
@@ -259,6 +307,19 @@ class ImprovedTradingSystem:
                 
                 if final_pnl > 0:
                     self.winning_trades += 1
+                
+                # Train AI with actual result (CRITICAL FIX!)
+                if self.ai_engine and hasattr(self.ai_engine, 'add_position_result'):
+                    try:
+                        # Determine result
+                        result = 'win' if final_pnl > 0 else 'loss'
+                        # Train AI (async call)
+                        asyncio.create_task(
+                            self.ai_engine.add_position_result(symbol, result, final_pnl)
+                        )
+                        self.logger.debug(f"🧠 AI trained: {symbol} = {result} ({final_pnl:.2f})")
+                    except Exception as e:
+                        self.logger.debug(f"AI training error: {e}")
                 
                 # Remove position
                 del self.positions[symbol]
