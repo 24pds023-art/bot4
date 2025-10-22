@@ -48,7 +48,7 @@ class SimpleRiskManager:
         self.max_daily_loss = max_daily_loss
         self.daily_pnl = 0.0
         self.total_pnl = 0.0
-        self.max_positions = 3
+        self.max_positions = 5  # Increased for diversification with 30 symbols
         
     def can_open_position(self, position_size: float, current_positions: int) -> bool:
         """Check if position can be opened"""
@@ -165,7 +165,8 @@ class ImprovedTradingSystem:
             if self.is_trading:
                 signal = self.scalping_engine.process_tick(tick)
                 
-                if signal and signal['strength'] > 0.6:
+                # FIXED: Match signal generation threshold (0.55)
+                if signal and signal['strength'] >= 0.55:
                     await self._process_signal(tick.symbol, signal, tick.price)
                     
                     # Notify dashboard of new signal
