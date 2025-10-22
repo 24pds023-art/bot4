@@ -426,5 +426,5 @@ class SimpleScalpingSignals:
             'momentum': momentum,
             'volume_ratio': volume_ratio,
             'change_24h': tick.change_24h
-        }ge_24h': tick.change_24h
+        
         }
