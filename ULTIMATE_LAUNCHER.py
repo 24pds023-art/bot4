@@ -122,17 +122,24 @@ class UltimateAutomatedTradingSystem:
         """Initialize the complete system"""
         self.logger.info("🚀 Initializing ULTIMATE Trading System...")
         
+        # CREATE trading system if it's None (CRITICAL FIX!)
+        if self.trading_system is None:
+            self.trading_system = ImprovedTradingSystem(ai_engine=None)
+            self.logger.info("✅ Trading system object created")
+        
         # Initialize core trading system
         balance = await self.trading_system.initialize()
         self.logger.info(f"✅ Core trading system initialized - Balance: ${balance:.2f}")
         
-        # Initialize AI engine FIRST (before trading system)
+        # THEN initialize AI engine with actual symbols from trading system
         if AI_AVAILABLE:
             try:
-                # Temporary symbols list (will use actual from trading system)
-                temp_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT']
-                self.ai_engine = DeepLearningTradingEngine(temp_symbols)
+                self.ai_engine = DeepLearningTradingEngine(self.trading_system.symbols)
                 self.logger.info("🧠 AI engine initialized")
+                
+                # Connect AI to trading system (CRITICAL!)
+                self.trading_system.ai_engine = self.ai_engine
+                self.logger.info("🔗 AI engine connected to trading system")
                 
                 # Try to load previous models (for continuity)
                 model_files = ['data/models/final_save.pkl', 'data/models/auto_save.pkl']
