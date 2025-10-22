@@ -116,15 +116,23 @@ class SimpleBinanceConnector:
     async def place_market_order(self, symbol: str, side: str, quantity: float):
         """Place market order with improved error handling"""
         try:
-            # Round quantity to appropriate precision
-            if symbol in ['BTCUSDT', 'ETHUSDT']:
-                quantity = round(quantity, 3)
-            else:
-                quantity = round(quantity, 2)
+            # Round quantity to appropriate precision based on Binance requirements
+            symbol_precision = {
+                'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'SOLUSDT': 1, 'XRPUSDT': 1,
+                'ADAUSDT': 0, 'DOTUSDT': 1, 'LINKUSDT': 2, 'MATICUSDT': 0, 'UNIUSDT': 2,
+                'LTCUSDT': 2, 'ETCUSDT': 1, 'ARBUSDT': 0, 'OPUSDT': 0, 'AVAXUSDT': 2,
+                'ATOMUSDT': 2, 'FILUSDT': 2, 'APTUSDT': 2, 'INJUSDT': 1, 'NEARUSDT': 1,
+                'SUIUSDT': 1, 'PEPEUSDT': 0, 'SHIBUSDT': 0, 'DOGEUSDT': 0, 'WIFUSDT': 0,
+                'FLOKIUSDT': 0, 'BONKUSDT': 0, 'RENDERUSDT': 2, 'SANDUSDT': 0, 'MANAUSDT': 0
+            }
             
-            # Ensure minimum quantity
-            if quantity < 0.001:
-                raise Exception(f"Quantity too small: {quantity}")
+            precision = symbol_precision.get(symbol, 2)  # Default to 2 decimals
+            quantity = round(quantity, precision)
+            
+            # Ensure minimum quantity (1 for whole number symbols, 0.01 for others)
+            min_qty = 1 if precision == 0 else 0.01
+            if quantity < min_qty:
+                raise Exception(f"Quantity too small: {quantity} (min: {min_qty})")
             
             params = {
                 'symbol': symbol,
