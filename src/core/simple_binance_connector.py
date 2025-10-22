@@ -121,13 +121,22 @@ class SimpleBinanceConnector:
                 'BTCUSDT': 3, 'ETHUSDT': 3, 'BNBUSDT': 2, 'SOLUSDT': 1, 'XRPUSDT': 1,
                 'ADAUSDT': 0, 'DOTUSDT': 1, 'LINKUSDT': 2, 'MATICUSDT': 0, 'UNIUSDT': 2,
                 'LTCUSDT': 2, 'ETCUSDT': 1, 'ARBUSDT': 0, 'OPUSDT': 0, 'AVAXUSDT': 2,
-                'ATOMUSDT': 2, 'FILUSDT': 2, 'APTUSDT': 2, 'INJUSDT': 1, 'NEARUSDT': 1,
+                'ATOMUSDT': 2, 'FILUSDT': 2, 'APTUSDT': 1, 'INJUSDT': 1, 'NEARUSDT': 1,
                 'SUIUSDT': 1, 'PEPEUSDT': 0, 'SHIBUSDT': 0, 'DOGEUSDT': 0, 'WIFUSDT': 0,
-                'FLOKIUSDT': 0, 'BONKUSDT': 0, 'RENDERUSDT': 2, 'SANDUSDT': 0, 'MANAUSDT': 0
+                'FLOKIUSDT': 0, 'BONKUSDT': 0, 'RENDERUSDT': 2, 'SANDUSDT': 0, 'MANAUSDT': 0,
+                'ALGOUSDT': 0  # ALGO needs whole numbers
             }
             
-            precision = symbol_precision.get(symbol, 2)  # Default to 2 decimals
-            quantity = round(quantity, precision)
+            precision = symbol_precision.get(symbol, 1)  # Default to 1 decimal (safer)
+            
+            # Apply precision rounding with proper float handling
+            from decimal import Decimal, ROUND_DOWN
+            qty_decimal = Decimal(str(quantity))
+            if precision == 0:
+                quantity = float(qty_decimal.quantize(Decimal('1'), rounding=ROUND_DOWN))
+            else:
+                quantize_val = Decimal('0.1') ** precision
+                quantity = float(qty_decimal.quantize(quantize_val, rounding=ROUND_DOWN))
             
             # Ensure minimum quantity (1 for whole number symbols, 0.01 for others)
             min_qty = 1 if precision == 0 else 0.01
