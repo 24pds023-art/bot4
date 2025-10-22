@@ -75,8 +75,8 @@ class UltimateAutomatedTradingSystem:
         if not self.api_key or not self.api_secret:
             raise ValueError("❌ API credentials not found! Please configure .env file")
         
-        # Initialize core components
-        self.trading_system = ImprovedTradingSystem()
+        # Initialize core components (AI will be set later)
+        self.trading_system = None
         self.ai_engine = None
         self.dashboard = None
         self.dashboard_runner = None
@@ -126,10 +126,12 @@ class UltimateAutomatedTradingSystem:
         balance = await self.trading_system.initialize()
         self.logger.info(f"✅ Core trading system initialized - Balance: ${balance:.2f}")
         
-        # Initialize AI engine if available
+        # Initialize AI engine FIRST (before trading system)
         if AI_AVAILABLE:
             try:
-                self.ai_engine = DeepLearningTradingEngine(self.trading_system.symbols)
+                # Temporary symbols list (will use actual from trading system)
+                temp_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT']
+                self.ai_engine = DeepLearningTradingEngine(temp_symbols)
                 self.logger.info("🧠 AI engine initialized")
                 
                 # Try to load previous models (for continuity)

@@ -69,7 +69,7 @@ class SimpleRiskManager:
 class ImprovedTradingSystem:
     """Improved, simplified trading system"""
     
-    def __init__(self):
+    def __init__(self, ai_engine=None):
         # Load environment
         load_dotenv()
         
@@ -80,6 +80,9 @@ class ImprovedTradingSystem:
         
         if not self.api_key or not self.api_secret:
             raise ValueError("❌ API credentials not found! Please configure .env file")
+        
+        # AI engine for training (CRITICAL FIX!)
+        self.ai_engine = ai_engine
         
         # Initialize components
         self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
@@ -304,6 +307,19 @@ class ImprovedTradingSystem:
                 
                 if final_pnl > 0:
                     self.winning_trades += 1
+                
+                # Train AI with actual result (CRITICAL FIX!)
+                if self.ai_engine and hasattr(self.ai_engine, 'add_position_result'):
+                    try:
+                        # Determine result
+                        result = 'win' if final_pnl > 0 else 'loss'
+                        # Train AI (async call)
+                        asyncio.create_task(
+                            self.ai_engine.add_position_result(symbol, result, final_pnl)
+                        )
+                        self.logger.debug(f"🧠 AI trained: {symbol} = {result} ({final_pnl:.2f})")
+                    except Exception as e:
+                        self.logger.debug(f"AI training error: {e}")
                 
                 # Remove position
                 del self.positions[symbol]
