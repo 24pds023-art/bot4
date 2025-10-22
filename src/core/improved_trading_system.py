@@ -165,8 +165,8 @@ class ImprovedTradingSystem:
             if self.is_trading:
                 signal = self.scalping_engine.process_tick(tick)
                 
-                # FIXED: Match signal generation threshold (0.55)
-                if signal and signal['strength'] >= 0.55:
+                # STRICT: Only trade high-quality signals (was 0.55 - too low!)
+                if signal and signal['strength'] >= 0.75:
                     await self._process_signal(tick.symbol, signal, tick.price)
                     
                     # Notify dashboard of new signal

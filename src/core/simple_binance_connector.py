@@ -399,8 +399,8 @@ class SimpleScalpingSignals:
             signal_strength += 0.10
             reasoning.append(f'24h drop: {tick.change_24h:.1f}%')
         
-        # BALANCED threshold - not too high, not too low
-        if signal_strength < 0.55 or not signal_type:
+        # STRICT threshold for quality trades (was 0.55 - way too low!)
+        if signal_strength < 0.75 or not signal_type:
             return None
         
         # Generate signal
@@ -426,4 +426,5 @@ class SimpleScalpingSignals:
             'momentum': momentum,
             'volume_ratio': volume_ratio,
             'change_24h': tick.change_24h
+        }ge_24h': tick.change_24h
         }
