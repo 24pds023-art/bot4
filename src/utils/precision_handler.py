@@ -248,24 +248,13 @@ class PrecisionHandler:
         return self.round_quantity(symbol, float(min_qty))
     
     def format_quantity(self, symbol: str, quantity: Decimal) -> str:
-        """Format quantity for API submission"""
-        if symbol not in self.precision_cache:
-            return f"{float(quantity):.8f}".rstrip('0').rstrip('.')
-        
-        info = self.precision_cache[symbol]
-        precision = info.get('quantityPrecision', 3)
-        
-        # Format with correct precision
-        format_str = f"{{:.{precision}f}}"
-        formatted = format_str.format(float(quantity))
-        
-        # Remove trailing zeros but keep at least one decimal if precision > 0
-        if precision > 0:
-            formatted = formatted.rstrip('0').rstrip('.')
-            if '.' not in formatted and precision > 0:
-                formatted += '.0'
-        
-        return formatted
+        """Format quantity for API submission - simple and reliable"""
+        try:
+            # Just convert to float then string - simplest approach
+            return str(float(quantity))
+        except Exception:
+            # Ultimate fallback
+            return str(quantity)
     
     def format_price(self, symbol: str, price: Decimal) -> str:
         """Format price for API submission"""
