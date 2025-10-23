@@ -106,6 +106,7 @@ class EnhancedControlDashboard:
         # API routes - Symbols
         self.app.router.add_post('/api/symbols/add', self.add_symbol_api)
         self.app.router.add_post('/api/symbols/remove', self.remove_symbol_api)
+        self.app.router.add_post('/api/symbols/update', self.update_symbols_api)
         self.app.router.add_get('/api/symbols/available', self.get_available_symbols_api)
         
         # API routes - Positions
@@ -1145,6 +1146,25 @@ class EnhancedControlDashboard:
             self._save_settings()
             self.logger.info(f"Settings updated via dashboard: {data}")
             return web.json_response({'success': True})
+        except Exception as e:
+            return web.json_response({'success': False, 'message': str(e)})
+    
+    async def update_symbols_api(self, request):
+        """Update symbols list (bulk update)"""
+        try:
+            data = await request.json()
+            new_symbols = data.get('symbols', [])
+            
+            if not new_symbols:
+                return web.json_response({'success': False, 'message': 'No symbols provided'})
+            
+            # Update settings
+            self.settings['symbols'] = new_symbols
+            self.trading_system.symbols = new_symbols
+            self._save_settings()
+            
+            self.logger.info(f"Symbols updated to: {len(new_symbols)} pairs")
+            return web.json_response({'success': True, 'count': len(new_symbols)})
         except Exception as e:
             return web.json_response({'success': False, 'message': str(e)})
     
