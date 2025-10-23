@@ -21,9 +21,15 @@ from urllib.parse import urlencode
 from decimal import Decimal, getcontext
 import numpy as np
 from collections import deque
+import sys
+import os
+
+# Add utils to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.precision_handler import PrecisionHandler
 
 # Set high precision for financial calculations
-getcontext().prec = 18
+getcontext().prec = 28
 
 @dataclass
 class RealTickData:
@@ -102,6 +108,9 @@ class RealBinanceConnector:
         # Symbol information cache
         self.symbol_info = {}
         
+        # Precision handler
+        self.precision_handler = PrecisionHandler()
+        
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         
@@ -148,6 +157,9 @@ class RealBinanceConnector:
                             'quantityPrecision': symbol_data['quantityPrecision'],
                             'filters': symbol_data['filters']
                         }
+                    
+                    # Load precision data
+                    self.precision_handler.load_symbol_info(data)
                     
                     self.logger.info(f"✅ Loaded info for {len(self.symbol_info)} symbols")
                 else:
@@ -381,17 +393,32 @@ class RealBinanceConnector:
         try:
             start_time = time.time()
             
+            # Validate and fix precision
+            if order_type.upper() == 'LIMIT' and price is not None:
+                is_valid, msg, fixed_qty, fixed_price = self.precision_handler.validate_order(
+                    symbol, quantity, price
+                )
+                
+                if not is_valid:
+                    self.logger.warning(f"⚠️ Order validation: {msg}")
+                    # Use fixed values anyway
+                    quantity = float(fixed_qty)
+                    price = float(fixed_price)
+                else:
+                    quantity = float(fixed_qty)
+                    price = float(fixed_price)
+            
             # Prepare order parameters
             params = {
                 'symbol': symbol,
                 'side': side.upper(),
                 'type': order_type.upper(),
-                'quantity': str(quantity),
+                'quantity': self.precision_handler.format_quantity(symbol, Decimal(str(quantity))),
                 'timestamp': int(time.time() * 1000)
             }
             
             if order_type.upper() == 'LIMIT':
-                params['price'] = str(price)
+                params['price'] = self.precision_handler.format_price(symbol, Decimal(str(price)))
                 params['timeInForce'] = time_in_force
             
             # Add signature

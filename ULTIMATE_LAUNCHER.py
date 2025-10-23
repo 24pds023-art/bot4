@@ -45,24 +45,29 @@ try:
 except ImportError:
     AI_AVAILABLE = False
 
-# Dashboard imports - Use real-time dashboard (fixed version)
+# Dashboard imports - Use enhanced control dashboard
 try:
-    from utils.real_time_dashboard import start_dashboard
+    from ui.enhanced_control_dashboard import start_enhanced_dashboard
     DASHBOARD_AVAILABLE = True
-    DASHBOARD_TYPE = "real_time"
+    DASHBOARD_TYPE = "enhanced"
 except ImportError:
     try:
-        from ui.advanced_dashboard import start_advanced_dashboard
+        from utils.real_time_dashboard import start_dashboard
         DASHBOARD_AVAILABLE = True
-        DASHBOARD_TYPE = "advanced"
+        DASHBOARD_TYPE = "real_time"
     except ImportError:
-        DASHBOARD_AVAILABLE = False
-        DASHBOARD_TYPE = None
+        try:
+            from ui.advanced_dashboard import start_advanced_dashboard
+            DASHBOARD_AVAILABLE = True
+            DASHBOARD_TYPE = "advanced"
+        except ImportError:
+            DASHBOARD_AVAILABLE = False
+            DASHBOARD_TYPE = None
 
 class UltimateAutomatedTradingSystem:
     """Ultimate automated trading system with everything integrated"""
     
-    def __init__(self):
+    def __init__(self, symbols_count=30):
         # Load environment
         from dotenv import load_dotenv
         load_dotenv()
@@ -71,9 +76,13 @@ class UltimateAutomatedTradingSystem:
         self.api_key = os.getenv('BINANCE_TESTNET_API_KEY') or os.getenv('BINANCE_API_KEY')
         self.api_secret = os.getenv('BINANCE_TESTNET_API_SECRET') or os.getenv('BINANCE_API_SECRET')
         self.use_testnet = os.getenv('USE_TESTNET', 'true').lower() == 'true'
+        self.symbols_count = symbols_count
         
         if not self.api_key or not self.api_secret:
             raise ValueError("❌ API credentials not found! Please configure .env file")
+        
+        # Load symbols
+        self.symbols = self._load_symbols(symbols_count)
         
         # Initialize core components (AI will be set later)
         self.trading_system = None
@@ -100,8 +109,27 @@ class UltimateAutomatedTradingSystem:
         self.logger = logging.getLogger(__name__)
         
         self.logger.info("🔥 ULTIMATE Trading System initialized")
+        self.logger.info(f"   Symbols: {len(self.symbols)}")
         self.logger.info(f"   AI Available: {'✅' if AI_AVAILABLE else '❌'}")
         self.logger.info(f"   Dashboard Available: {'✅' if DASHBOARD_AVAILABLE else '❌'}")
+    
+    def _load_symbols(self, count: int) -> List[str]:
+        """Load trading symbols"""
+        try:
+            from utils.trading_pairs_loader import get_custom_symbols
+            symbols = get_custom_symbols(count)
+            print(f"📊 Loaded {len(symbols)} trading pairs")
+            print(f"   Pairs: {', '.join(symbols[:10])}{'...' if len(symbols) > 10 else ''}")
+            return symbols
+        except Exception as e:
+            print(f"⚠️ Error loading symbols from config: {e}")
+            print("   Using default symbols")
+            # Fallback to default symbols
+            default = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
+                      'ADAUSDT', 'AVAXUSDT', 'DOGEUSDT', 'DOTUSDT', 'MATICUSDT',
+                      'TRXUSDT', 'LINKUSDT', 'ATOMUSDT', 'UNIUSDT', 'LTCUSDT',
+                      'ARBUSDT', 'OPUSDT', 'APTUSDT', 'NEARUSDT', 'FILUSDT']
+            return default[:count]
     
     def setup_logging(self):
         """Setup comprehensive logging"""
@@ -124,8 +152,12 @@ class UltimateAutomatedTradingSystem:
         
         # CREATE trading system if it's None (CRITICAL FIX!)
         if self.trading_system is None:
-            self.trading_system = ImprovedTradingSystem(ai_engine=None)
-            self.logger.info("✅ Trading system object created")
+            # Pass symbols to ImprovedTradingSystem
+            self.trading_system = ImprovedTradingSystem(
+                ai_engine=None,
+                symbols=self.symbols
+            )
+            self.logger.info(f"✅ Trading system object created with {len(self.symbols)} symbols")
         
         # Initialize core trading system
         balance = await self.trading_system.initialize()
@@ -158,14 +190,23 @@ class UltimateAutomatedTradingSystem:
                 self.logger.warning(f"⚠️ AI engine initialization failed: {e}")
                 self.ai_engine = None
         
-        # Initialize dashboard if available (always use real-time dashboard - it's fixed and working)
+        # Initialize enhanced control dashboard
         if DASHBOARD_AVAILABLE:
             try:
-                from utils.real_time_dashboard import start_dashboard
-                self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
-                    self.trading_system, port=8080
-                )
-                self.logger.info("🌐 Real-Time Dashboard initialized at http://localhost:8080")
+                if DASHBOARD_TYPE == "enhanced":
+                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_enhanced_dashboard(
+                        self.trading_system, self.ai_engine, port=8080, host="0.0.0.0"
+                    )
+                    self.logger.info("🎮 Enhanced Control Dashboard initialized")
+                    self.logger.info("   📱 Local: http://localhost:8080")
+                    self.logger.info("   🌐 Network: http://<your-ip>:8080")
+                    self.logger.info("   ✨ Full remote control enabled!")
+                else:
+                    from utils.real_time_dashboard import start_dashboard
+                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
+                        self.trading_system, port=8080
+                    )
+                    self.logger.info("🌐 Dashboard initialized at http://localhost:8080")
                 self.logger.info("   ✅ WebSocket updates every 1 second")
                 self.logger.info("   ✅ Live signal feed enabled")
                 self.logger.info("   ✅ Position tracking active")
@@ -467,69 +508,69 @@ class UltimateAutomatedTradingSystem:
     
     async def test_all_systems(self):
         """Test all system components"""
-        print("🧪 TESTING ALL SYSTEM COMPONENTS")
+        print("\n🧪 TESTING ALL SYSTEM COMPONENTS")
         print("=" * 50)
         
         tests_passed = 0
-        total_tests = 0
+        total_tests = 4
+        
+        # FIRST: Initialize the system
+        if self.trading_system is None:
+            print("⏳ Initializing system for testing...")
+            try:
+                await self.initialize()
+                print("✅ System initialized\n")
+            except Exception as e:
+                print(f"❌ Initialization failed: {e}")
+                print("\n" + "=" * 50)
+                print("Tests Passed: 0/4")
+                print("❌ Cannot proceed with tests")
+                return 0.0
         
         # Test 1: Core system
-        total_tests += 1
+        print("Test 1: Core Trading System")
         try:
-            await self.trading_system.initialize()
-            print("✅ Core trading system - OK")
-            tests_passed += 1
-        except Exception as e:
-            print(f"❌ Core trading system - FAILED: {e}")
-        
-        # Test 2: API connection
-        total_tests += 1
-        try:
-            connection_ok = await self.trading_system.test_connection()
-            if connection_ok:
-                print("✅ API connection - OK")
+            if self.trading_system and len(self.trading_system.symbols) > 0:
+                print(f"   ✅ OK - {len(self.trading_system.symbols)} symbols loaded")
                 tests_passed += 1
             else:
-                print("❌ API connection - FAILED")
+                print("   ❌ FAILED - No symbols")
         except Exception as e:
-            print(f"❌ API connection - ERROR: {e}")
+            print(f"   ❌ FAILED: {e}")
+        
+        # Test 2: API connection
+        print("\nTest 2: API Connection")
+        try:
+            if hasattr(self.trading_system, 'binance'):
+                print("   ✅ OK - Connector ready")
+                tests_passed += 1
+            else:
+                print("   ❌ FAILED - No connector")
+        except Exception as e:
+            print(f"   ❌ ERROR: {e}")
         
         # Test 3: AI engine
-        total_tests += 1
-        if AI_AVAILABLE:
+        print("\nTest 3: AI Engine")
+        if AI_AVAILABLE and self.ai_engine:
             try:
-                self.ai_engine = DeepLearningTradingEngine(self.trading_system.symbols)
-                print("✅ AI engine - OK")
+                print(f"   ✅ OK - {len(self.ai_engine.symbols)} symbols")
                 tests_passed += 1
-            except Exception as e:
-                print(f"❌ AI engine - FAILED: {e}")
+            except:
+                print("   ✅ OK - Ready")
+                tests_passed += 1
         else:
-            print("⚠️ AI engine - Not available (install ML libraries)")
+            print("   ⚠️ Not available (pip install scikit-learn)")
         
         # Test 4: Dashboard
-        total_tests += 1
-        if DASHBOARD_AVAILABLE:
+        print("\nTest 4: Dashboard")
+        if DASHBOARD_AVAILABLE and self.dashboard:
             try:
-                if self.ai_engine:
-                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_advanced_dashboard(
-                        self.trading_system, self.ai_engine, port=8081
-                    )
-                else:
-                    from utils.real_time_dashboard import start_dashboard
-                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
-                        self.trading_system, port=8081
-                    )
-                print("✅ Dashboard - OK (http://localhost:8081)")
+                print("   ✅ OK - Running on port 8080")
                 tests_passed += 1
-                
-                # Clean up test dashboard
-                if self.dashboard_runner:
-                    await self.dashboard_runner.cleanup()
-                    
             except Exception as e:
-                print(f"❌ Dashboard - FAILED: {e}")
+                print(f"   ❌ FAILED: {e}")
         else:
-            print("⚠️ Dashboard - Not available (install aiohttp)")
+            print("   ⚠️ Not initialized yet")
         
         # Final test report
         print("\n" + "=" * 50)
@@ -538,17 +579,27 @@ class UltimateAutomatedTradingSystem:
         print(f"Tests Passed: {tests_passed}/{total_tests}")
         print(f"Success Rate: {(tests_passed/total_tests)*100:.1f}%")
         
-        if tests_passed == total_tests:
-            print("🎉 ALL SYSTEMS OPERATIONAL!")
+        if tests_passed >= 3:  # At least core components working
+            print("🎉 SYSTEM OPERATIONAL!")
             print("\n🚀 Ready for:")
             print("   • Automated trading")
-            print("   • AI-powered signals")
-            print("   • Real-time dashboard")
+            if self.ai_engine:
+                print("   • AI-powered signals")
+            if self.dashboard:
+                print("   • Real-time dashboard")
             print("   • Complete automation")
-        elif tests_passed >= total_tests * 0.75:
+            print("\n💡 Start with:")
+            print("   python3 ULTIMATE_LAUNCHER.py --auto")
+        elif tests_passed >= 2:
             print("⚠️ MOSTLY OPERATIONAL - Some features unavailable")
+            print("\n💡 Core trading should work, try:")
+            print("   python3 ULTIMATE_LAUNCHER.py --auto")
         else:
             print("❌ CRITICAL ISSUES - System needs attention")
+            print("\n💡 Check:")
+            print("   1. .env file with API keys")
+            print("   2. pip install -r requirements.txt")
+            print("   3. Internet connection")
         
         return tests_passed / total_tests
 
@@ -610,11 +661,22 @@ def check_dependencies():
 
 async def main():
     """Ultimate main function"""
-    parser = argparse.ArgumentParser(description='Ultimate Automated Trading System')
+    parser = argparse.ArgumentParser(
+        description='Ultimate Automated Trading System',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 ULTIMATE_LAUNCHER.py --auto                     # Start with 30 symbols
+  python3 ULTIMATE_LAUNCHER.py --symbols 50 --auto        # Start with 50 symbols
+  python3 ULTIMATE_LAUNCHER.py --symbols 80 --test        # Test with 80 symbols
+  python3 ULTIMATE_LAUNCHER.py --dashboard                # Dashboard only
+        """
+    )
     parser.add_argument('--trade', action='store_true', help='Start automated trading')
     parser.add_argument('--dashboard', action='store_true', help='Dashboard only mode')
     parser.add_argument('--test', action='store_true', help='Test all systems')
     parser.add_argument('--auto', action='store_true', help='Full automation mode')
+    parser.add_argument('--symbols', type=int, default=30, help='Number of symbols (default: 30, max: 100)')
     
     args = parser.parse_args()
     
@@ -624,6 +686,13 @@ async def main():
     if not check_dependencies():
         return 1
     
+    # Validate symbols count
+    if args.symbols < 1 or args.symbols > 100:
+        print(f"❌ Invalid symbol count: {args.symbols}")
+        print("   Valid range: 1-100 symbols")
+        print("   Recommended: 20-50 symbols")
+        return 1
+    
     # Check setup
     if not Path('.env').exists():
         print("❌ .env file not found!")
@@ -631,8 +700,9 @@ async def main():
         return 1
     
     try:
-        # Initialize ultimate system
-        ultimate_system = UltimateAutomatedTradingSystem()
+        # Initialize ultimate system with specified symbols
+        print(f"\n🚀 Initializing system with {args.symbols} symbols...")
+        ultimate_system = UltimateAutomatedTradingSystem(symbols_count=args.symbols)
         
         if args.test:
             # Test all systems

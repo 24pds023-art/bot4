@@ -1,0 +1,141 @@
+# TRADING PAIRS CONFIGURATION
+# ===========================
+# Comprehensive list of liquid trading pairs
+# Organized by market cap and liquidity
+
+# HIGH PRIORITY - Top Market Cap & Liquidity
+high_priority:
+  - BTCUSDT    # Bitcoin
+  - ETHUSDT    # Ethereum
+  - BNBUSDT    # Binance Coin
+  - SOLUSDT    # Solana
+  - XRPUSDT    # Ripple
+
+# MEDIUM PRIORITY - Large Cap Altcoins
+medium_priority:
+  - ADAUSDT    # Cardano
+  - AVAXUSDT   # Avalanche
+  - DOGEUSDT   # Dogecoin
+  - DOTUSDT    # Polkadot
+  - MATICUSDT  # Polygon
+  - TRXUSDT    # Tron
+  - LINKUSDT   # Chainlink
+  - ATOMUSDT   # Cosmos
+  - UNIUSDT    # Uniswap
+  - LTCUSDT    # Litecoin
+
+# LOW PRIORITY - Mid Cap (High Volume)
+low_priority:
+  - ARBUSDT    # Arbitrum
+  - OPUSDT     # Optimism
+  - APTUSDT    # Aptos
+  - NEARUSDT   # Near Protocol
+  - FILUSDT    # Filecoin
+  - ICPUSDT    # Internet Computer
+  - INJUSDT    # Injective
+  - SUIUSDT    # Sui
+  - STXUSDT    # Stacks
+  - AAVEUSDT   # Aave
+  - MKRUSDT    # Maker
+  - LDOUSDT    # Lido DAO
+  - TIAUSDT    # Celestia
+  - SEIUSDT    # Sei
+  - IMXUSDT    # Immutable X
+
+# DEFI TOKENS - High Volatility
+defi_tokens:
+  - UNIUSDT    # Uniswap
+  - AAVEUSDT   # Aave
+  - CRVUSDT    # Curve
+  - COMPUSDT   # Compound
+  - MKRUSDT    # Maker
+  - SUSHIUSDT  # SushiSwap
+  - SNXUSDT    # Synthetix
+  - YFIUSDT    # Yearn Finance
+
+# LAYER 2 - Scaling Solutions
+layer2_tokens:
+  - ARBUSDT    # Arbitrum
+  - OPUSDT     # Optimism
+  - MATICUSDT  # Polygon
+  - IMXUSDT    # Immutable X
+  - ZKUSDT     # zkSync (if available)
+
+# MEME COINS - High Volume (Use with caution)
+meme_coins:
+  - DOGEUSDT   # Dogecoin
+  - SHIBUSDT   # Shiba Inu
+  - PEPEUSDT   # Pepe
+  - FLOKIUSDT  # Floki
+
+# AI TOKENS - Trending Sector
+ai_tokens:
+  - FETUSDT    # Fetch.ai
+  - AGIXUSDT   # SingularityNET
+  - OCEANUSDT  # Ocean Protocol
+  - RENDERUSDT # Render Token
+
+# GAMING/METAVERSE
+gaming_tokens:
+  - AXSUSDT    # Axie Infinity
+  - SANDUSDT   # The Sandbox
+  - MANAUSDT   # Decentraland
+  - APEUSDT    # ApeCoin
+  - GALAUSDT   # Gala
+
+# RECOMMENDED CONFIGURATION
+# For best results without API limit violations:
+#
+# Conservative (20-30 pairs):
+# - Use high_priority + select medium_priority (10-15 coins)
+#
+# Balanced (30-50 pairs):
+# - Use high_priority + medium_priority + select low_priority
+#
+# Aggressive (50-80 pairs):
+# - Use high_priority + medium_priority + low_priority + defi_tokens
+#
+# Notes:
+# - More pairs = more data = better opportunities BUT higher API usage
+# - Binance Futures allows ~1200 requests/minute (weight-based)
+# - Each symbol uses ~3-5 WebSocket connections
+# - Recommended max: 50-60 pairs for stable operation
+# - Use IP rate limit management for > 60 pairs
+
+# Default configuration (balanced approach)
+default_symbols:
+  - BTCUSDT
+  - ETHUSDT
+  - BNBUSDT
+  - SOLUSDT
+  - XRPUSDT
+  - ADAUSDT
+  - AVAXUSDT
+  - DOGEUSDT
+  - DOTUSDT
+  - MATICUSDT
+  - TRXUSDT
+  - LINKUSDT
+  - ATOMUSDT
+  - UNIUSDT
+  - LTCUSDT
+  - ARBUSDT
+  - OPUSDT
+  - APTUSDT
+  - NEARUSDT
+  - FILUSDT
+  - INJUSDT
+  - SUIUSDT
+  - AAVEUSDT
+  - IMXUSDT
+  - PEPEUSDT
+  - FETUSDT
+  - SANDUSDT
+  - MANAUSDT
+  - APEUSDT
+  - SHIBUSDT
+
+# Total: 30 diverse pairs across different sectors
+# Expected API usage: ~90-150 requests/minute
+# WebSocket connections: ~90-150 concurrent streams
+# Recommended for: Production trading with good diversification
