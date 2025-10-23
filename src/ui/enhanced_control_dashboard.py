@@ -391,6 +391,7 @@ class EnhancedControlDashboard:
             display: grid;
             grid-template-columns: 2fr 1fr;
             gap: 20px;
+            margin-bottom: 40px;
         }
         
         .chart-container {
@@ -398,11 +399,31 @@ class EnhancedControlDashboard:
             border-radius: 12px;
             padding: 20px;
             border: 1px solid var(--border-color);
+            height: 400px;
+            min-height: 400px;
+            max-height: 400px;
+            display: flex;
+            flex-direction: column;
         }
         
         .chart-container h3 {
             margin-bottom: 15px;
             color: var(--accent-blue);
+            flex-shrink: 0;
+        }
+        
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        
+        .chart-wrapper canvas {
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
         }
         
         .positions-panel {
@@ -410,11 +431,24 @@ class EnhancedControlDashboard:
             border-radius: 12px;
             padding: 20px;
             border: 1px solid var(--border-color);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .positions-panel h3 {
+            flex-shrink: 0;
+            margin-bottom: 15px;
+        }
+        
+        .positions-panel > .btn {
+            flex-shrink: 0;
         }
         
         .position-list {
-            max-height: 500px;
+            flex: 1;
             overflow-y: auto;
+            min-height: 0;
         }
         
         .position-item {
@@ -637,7 +671,9 @@ class EnhancedControlDashboard:
         <div class="main-content">
             <div class="chart-container">
                 <h3>📈 Performance Chart</h3>
-                <canvas id="performanceChart" width="400" height="200"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="performanceChart"></canvas>
+                </div>
             </div>
             
             <div class="positions-panel">
@@ -681,14 +717,27 @@ class EnhancedControlDashboard:
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { 
+                            display: true,
+                            labels: { color: '#b0b0b0' }
+                        }
                     },
                     scales: {
                         x: {
                             type: 'time',
-                            time: { unit: 'minute' },
+                            time: { 
+                                unit: 'minute',
+                                displayFormats: {
+                                    minute: 'HH:mm'
+                                }
+                            },
                             grid: { color: 'rgba(255,255,255,0.1)' },
-                            ticks: { color: '#b0b0b0' }
+                            ticks: { 
+                                color: '#b0b0b0',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8
+                            }
                         },
                         y: {
                             grid: { color: 'rgba(255,255,255,0.1)' },
@@ -697,6 +746,10 @@ class EnhancedControlDashboard:
                                 callback: value => '$' + value.toFixed(2)
                             }
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
