@@ -21,6 +21,10 @@ class PrecisionHandler:
     def __init__(self):
         self.symbol_info: Dict[str, Dict[str, Any]] = {}
         self.precision_cache: Dict[str, Dict[str, Any]] = {}
+    
+    def has_symbol(self, symbol: str) -> bool:
+        """Check if symbol precision data is loaded"""
+        return symbol in self.precision_cache
         
     def load_symbol_info(self, exchange_info: Dict[str, Any]):
         """Load symbol information from Binance exchange info"""
