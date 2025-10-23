@@ -147,9 +147,10 @@ class UltimateAutomatedTradingSystem:
         
         # CREATE trading system if it's None (CRITICAL FIX!)
         if self.trading_system is None:
+            # Pass symbols to ImprovedTradingSystem
             self.trading_system = ImprovedTradingSystem(
-                symbols=self.symbols,
-                ai_engine=None
+                ai_engine=None,
+                symbols=self.symbols
             )
             self.logger.info(f"✅ Trading system object created with {len(self.symbols)} symbols")
         

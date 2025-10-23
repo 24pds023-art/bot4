@@ -69,7 +69,7 @@ class SimpleRiskManager:
 class ImprovedTradingSystem:
     """Improved, simplified trading system"""
     
-    def __init__(self, ai_engine=None):
+    def __init__(self, ai_engine=None, symbols=None):
         # Load environment
         load_dotenv()
         
@@ -88,21 +88,25 @@ class ImprovedTradingSystem:
         self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
         self.scalping_engine = SimpleScalpingSignals()
         
-        # Trading configuration - Extended to 30 symbols for diversification
-        self.symbols = [
-            # Major cryptocurrencies
-            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
-            'DOGEUSDT', 'SOLUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT',
-            # DeFi tokens
-            'AVAXUSDT', 'LINKUSDT', 'UNIUSDT', 'ATOMUSDT', 'ETCUSDT',
-            # Layer 1/2
-            'NEARUSDT', 'ALGOUSDT', 'VETUSDT', 'FTMUSDT', 'SANDUSDT',
-            # Meme/Popular
-            'SHIBUSDT', 'PEPEUSDT', 'FLOKIUSDT',
-            # Others
-            'APTUSDT', 'ARBUSDT', 'OPUSDT', 'INJUSDT', 'SUIUSDT',
-            'RNDRUSDT', 'STXUSDT'
-        ]
+        # Trading configuration - Use provided symbols or default to 30
+        if symbols is not None:
+            self.symbols = symbols
+        else:
+            # Default symbols - Extended to 30 for diversification
+            self.symbols = [
+                # Major cryptocurrencies
+                'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT',
+                'DOGEUSDT', 'SOLUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT',
+                # DeFi tokens
+                'AVAXUSDT', 'LINKUSDT', 'UNIUSDT', 'ATOMUSDT', 'ETCUSDT',
+                # Layer 1/2
+                'NEARUSDT', 'ALGOUSDT', 'VETUSDT', 'FTMUSDT', 'SANDUSDT',
+                # Meme/Popular
+                'SHIBUSDT', 'PEPEUSDT', 'FLOKIUSDT',
+                # Others
+                'APTUSDT', 'ARBUSDT', 'OPUSDT', 'INJUSDT', 'SUIUSDT',
+                'RNDRUSDT', 'STXUSDT'
+            ]
         self.position_size_usd = float(os.getenv('BASE_POSITION_USD', 50))
         
         # Trading state
