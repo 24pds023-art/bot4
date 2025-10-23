@@ -62,7 +62,7 @@ except ImportError:
 class UltimateAutomatedTradingSystem:
     """Ultimate automated trading system with everything integrated"""
     
-    def __init__(self):
+    def __init__(self, symbols_count=30):
         # Load environment
         from dotenv import load_dotenv
         load_dotenv()
@@ -71,9 +71,13 @@ class UltimateAutomatedTradingSystem:
         self.api_key = os.getenv('BINANCE_TESTNET_API_KEY') or os.getenv('BINANCE_API_KEY')
         self.api_secret = os.getenv('BINANCE_TESTNET_API_SECRET') or os.getenv('BINANCE_API_SECRET')
         self.use_testnet = os.getenv('USE_TESTNET', 'true').lower() == 'true'
+        self.symbols_count = symbols_count
         
         if not self.api_key or not self.api_secret:
             raise ValueError("❌ API credentials not found! Please configure .env file")
+        
+        # Load symbols
+        self.symbols = self._load_symbols(symbols_count)
         
         # Initialize core components (AI will be set later)
         self.trading_system = None
@@ -100,8 +104,27 @@ class UltimateAutomatedTradingSystem:
         self.logger = logging.getLogger(__name__)
         
         self.logger.info("🔥 ULTIMATE Trading System initialized")
+        self.logger.info(f"   Symbols: {len(self.symbols)}")
         self.logger.info(f"   AI Available: {'✅' if AI_AVAILABLE else '❌'}")
         self.logger.info(f"   Dashboard Available: {'✅' if DASHBOARD_AVAILABLE else '❌'}")
+    
+    def _load_symbols(self, count: int) -> List[str]:
+        """Load trading symbols"""
+        try:
+            from utils.trading_pairs_loader import get_custom_symbols
+            symbols = get_custom_symbols(count)
+            print(f"📊 Loaded {len(symbols)} trading pairs")
+            print(f"   Pairs: {', '.join(symbols[:10])}{'...' if len(symbols) > 10 else ''}")
+            return symbols
+        except Exception as e:
+            print(f"⚠️ Error loading symbols from config: {e}")
+            print("   Using default symbols")
+            # Fallback to default symbols
+            default = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
+                      'ADAUSDT', 'AVAXUSDT', 'DOGEUSDT', 'DOTUSDT', 'MATICUSDT',
+                      'TRXUSDT', 'LINKUSDT', 'ATOMUSDT', 'UNIUSDT', 'LTCUSDT',
+                      'ARBUSDT', 'OPUSDT', 'APTUSDT', 'NEARUSDT', 'FILUSDT']
+            return default[:count]
     
     def setup_logging(self):
         """Setup comprehensive logging"""
@@ -124,8 +147,11 @@ class UltimateAutomatedTradingSystem:
         
         # CREATE trading system if it's None (CRITICAL FIX!)
         if self.trading_system is None:
-            self.trading_system = ImprovedTradingSystem(ai_engine=None)
-            self.logger.info("✅ Trading system object created")
+            self.trading_system = ImprovedTradingSystem(
+                symbols=self.symbols,
+                ai_engine=None
+            )
+            self.logger.info(f"✅ Trading system object created with {len(self.symbols)} symbols")
         
         # Initialize core trading system
         balance = await self.trading_system.initialize()
@@ -610,11 +636,22 @@ def check_dependencies():
 
 async def main():
     """Ultimate main function"""
-    parser = argparse.ArgumentParser(description='Ultimate Automated Trading System')
+    parser = argparse.ArgumentParser(
+        description='Ultimate Automated Trading System',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 ULTIMATE_LAUNCHER.py --auto                     # Start with 30 symbols
+  python3 ULTIMATE_LAUNCHER.py --symbols 50 --auto        # Start with 50 symbols
+  python3 ULTIMATE_LAUNCHER.py --symbols 80 --test        # Test with 80 symbols
+  python3 ULTIMATE_LAUNCHER.py --dashboard                # Dashboard only
+        """
+    )
     parser.add_argument('--trade', action='store_true', help='Start automated trading')
     parser.add_argument('--dashboard', action='store_true', help='Dashboard only mode')
     parser.add_argument('--test', action='store_true', help='Test all systems')
     parser.add_argument('--auto', action='store_true', help='Full automation mode')
+    parser.add_argument('--symbols', type=int, default=30, help='Number of symbols (default: 30, max: 100)')
     
     args = parser.parse_args()
     
@@ -624,6 +661,13 @@ async def main():
     if not check_dependencies():
         return 1
     
+    # Validate symbols count
+    if args.symbols < 1 or args.symbols > 100:
+        print(f"❌ Invalid symbol count: {args.symbols}")
+        print("   Valid range: 1-100 symbols")
+        print("   Recommended: 20-50 symbols")
+        return 1
+    
     # Check setup
     if not Path('.env').exists():
         print("❌ .env file not found!")
@@ -631,8 +675,9 @@ async def main():
         return 1
     
     try:
-        # Initialize ultimate system
-        ultimate_system = UltimateAutomatedTradingSystem()
+        # Initialize ultimate system with specified symbols
+        print(f"\n🚀 Initializing system with {args.symbols} symbols...")
+        ultimate_system = UltimateAutomatedTradingSystem(symbols_count=args.symbols)
         
         if args.test:
             # Test all systems
