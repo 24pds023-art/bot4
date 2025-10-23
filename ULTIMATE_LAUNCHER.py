@@ -45,19 +45,24 @@ try:
 except ImportError:
     AI_AVAILABLE = False
 
-# Dashboard imports - Use real-time dashboard (fixed version)
+# Dashboard imports - Use enhanced control dashboard
 try:
-    from utils.real_time_dashboard import start_dashboard
+    from ui.enhanced_control_dashboard import start_enhanced_dashboard
     DASHBOARD_AVAILABLE = True
-    DASHBOARD_TYPE = "real_time"
+    DASHBOARD_TYPE = "enhanced"
 except ImportError:
     try:
-        from ui.advanced_dashboard import start_advanced_dashboard
+        from utils.real_time_dashboard import start_dashboard
         DASHBOARD_AVAILABLE = True
-        DASHBOARD_TYPE = "advanced"
+        DASHBOARD_TYPE = "real_time"
     except ImportError:
-        DASHBOARD_AVAILABLE = False
-        DASHBOARD_TYPE = None
+        try:
+            from ui.advanced_dashboard import start_advanced_dashboard
+            DASHBOARD_AVAILABLE = True
+            DASHBOARD_TYPE = "advanced"
+        except ImportError:
+            DASHBOARD_AVAILABLE = False
+            DASHBOARD_TYPE = None
 
 class UltimateAutomatedTradingSystem:
     """Ultimate automated trading system with everything integrated"""
@@ -185,14 +190,23 @@ class UltimateAutomatedTradingSystem:
                 self.logger.warning(f"⚠️ AI engine initialization failed: {e}")
                 self.ai_engine = None
         
-        # Initialize dashboard if available (always use real-time dashboard - it's fixed and working)
+        # Initialize enhanced control dashboard
         if DASHBOARD_AVAILABLE:
             try:
-                from utils.real_time_dashboard import start_dashboard
-                self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
-                    self.trading_system, port=8080
-                )
-                self.logger.info("🌐 Real-Time Dashboard initialized at http://localhost:8080")
+                if DASHBOARD_TYPE == "enhanced":
+                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_enhanced_dashboard(
+                        self.trading_system, self.ai_engine, port=8080, host="0.0.0.0"
+                    )
+                    self.logger.info("🎮 Enhanced Control Dashboard initialized")
+                    self.logger.info("   📱 Local: http://localhost:8080")
+                    self.logger.info("   🌐 Network: http://<your-ip>:8080")
+                    self.logger.info("   ✨ Full remote control enabled!")
+                else:
+                    from utils.real_time_dashboard import start_dashboard
+                    self.dashboard, self.dashboard_runner, self.dashboard_task = await start_dashboard(
+                        self.trading_system, port=8080
+                    )
+                    self.logger.info("🌐 Dashboard initialized at http://localhost:8080")
                 self.logger.info("   ✅ WebSocket updates every 1 second")
                 self.logger.info("   ✅ Live signal feed enabled")
                 self.logger.info("   ✅ Position tracking active")
