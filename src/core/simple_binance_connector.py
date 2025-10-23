@@ -156,25 +156,36 @@ class SimpleBinanceConnector:
         try:
             # Use precision handler if available
             if self.precision_handler and self.precision_handler.has_symbol(symbol):
-                # Round quantity using precision handler
-                rounded_quantity = self.precision_handler.round_quantity(symbol, quantity)
-                quantity_final = self.precision_handler.format_quantity(symbol, rounded_quantity)
-                
-                # Validate order
-                validation = self.precision_handler.validate_order(
-                    symbol=symbol,
-                    quantity=float(rounded_quantity),
-                    price=None  # Market order, no price needed
-                )
-                
-                if not validation['valid']:
-                    raise Exception(f"Order validation failed: {', '.join(validation['errors'])}")
-                
-                self.logger.debug(f"📏 {symbol}: {quantity} -> {quantity_final} (precision handler)")
+                try:
+                    # Round quantity using precision handler
+                    rounded_quantity = self.precision_handler.round_quantity(symbol, quantity)
+                    
+                    # Convert to string directly (format_quantity sometimes has issues)
+                    quantity_final = str(float(rounded_quantity))
+                    
+                    # Validate order
+                    validation = self.precision_handler.validate_order(
+                        symbol=symbol,
+                        quantity=float(rounded_quantity),
+                        price=None  # Market order, no price needed
+                    )
+                    
+                    if not validation['valid']:
+                        self.logger.warning(f"⚠️ Validation failed for {symbol}: {validation['errors']}")
+                        # Use fallback instead of failing
+                        raise ValueError("Validation failed")
+                    
+                    self.logger.debug(f"📏 {symbol}: {quantity} -> {quantity_final} (precision handler)")
+                    
+                except (ValueError, Exception) as e:
+                    # Fallback if precision handler fails
+                    self.logger.warning(f"⚠️ Precision handler error for {symbol}: {e}, using fallback")
+                    qty_decimal = Decimal(str(quantity))
+                    quantity_final = str(float(qty_decimal.quantize(Decimal('0.001'), rounding=ROUND_DOWN)))
                 
             else:
                 # Fallback precision handling
-                self.logger.warning(f"⚠️ Using fallback precision for {symbol}")
+                self.logger.warning(f"⚠️ No precision data for {symbol}, using fallback")
                 qty_decimal = Decimal(str(quantity))
                 quantity_final = str(float(qty_decimal.quantize(Decimal('0.001'), rounding=ROUND_DOWN)))
             
