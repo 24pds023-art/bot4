@@ -175,8 +175,12 @@ class OnlineLearningEngine:
             
             self.logger.info(f"🧠 Retraining models with {len(X)} samples")
             
+            # CRITICAL: Actually train the models!
+            return X, y  # Return for parent to train
+            
         except Exception as e:
             self.logger.error(f"Error retraining models: {e}")
+            return None, None
     
     def _update_performance_metrics(self):
         """Update model performance metrics"""
@@ -529,24 +533,45 @@ class DeepLearningTradingEngine:
             # Prepare features
             feature_array = self.online_learner._features_to_array(features).reshape(1, -1)
             
+            # Check if models are trained
+            models_trained = False
+            for model_name, model in self.ensemble_models[symbol].items():
+                try:
+                    # Check if model has been fitted
+                    if hasattr(model, 'n_features_in_'):
+                        models_trained = True
+                        break
+                except:
+                    pass
+            
+            # If no models trained, use heuristic
+            if not models_trained:
+                return self._simple_heuristic_prediction(features)
+            
             # Get predictions from each model
             predictions = {}
             probabilities = {}
             
             for model_name, model in self.ensemble_models[symbol].items():
                 try:
-                    if hasattr(model, 'predict_proba'):
-                        prob = model.predict_proba(feature_array)[0]
-                        pred = np.argmax(prob)
-                        predictions[model_name] = pred
-                        probabilities[model_name] = prob
-                    else:
-                        pred = model.predict(feature_array)[0]
-                        predictions[model_name] = pred
-                        probabilities[model_name] = [0.33, 0.33, 0.34]  # Default
-                except:
-                    # Model not trained yet, use heuristic
-                    return self._simple_heuristic_prediction(features)
+                    # Only use if trained
+                    if hasattr(model, 'n_features_in_'):
+                        if hasattr(model, 'predict_proba'):
+                            prob = model.predict_proba(feature_array)[0]
+                            pred = np.argmax(prob)
+                            predictions[model_name] = pred
+                            probabilities[model_name] = prob
+                        else:
+                            pred = model.predict(feature_array)[0]
+                            predictions[model_name] = pred
+                            probabilities[model_name] = [0.33, 0.33, 0.34]  # Default
+                except Exception as e:
+                    self.logger.debug(f"Model {model_name} prediction failed: {e}")
+                    continue
+            
+            # If no successful predictions, use heuristic
+            if not predictions:
+                return self._simple_heuristic_prediction(features)
             
             # Weighted ensemble
             weights = self.model_weights[symbol]
@@ -595,14 +620,35 @@ class DeepLearningTradingEngine:
             if prediction == actual_result:
                 self.correct_predictions += 1
             
+            # CRITICAL: Actually train the models when we have enough samples
+            if len(self.online_learner.feature_buffer) >= self.online_learner.min_samples_for_training:
+                X, y = await self.online_learner._retrain_models()
+                if X is not None and y is not None:
+                    await self._train_ensemble_models(symbol, X, y)
+            
             # Update model weights based on performance
             await self._update_model_weights(symbol)
             
         except Exception as e:
             self.logger.error(f"Error updating model performance: {e}")
     
+    async def _train_ensemble_models(self, symbol: str, X: np.ndarray, y: np.ndarray):
+        """Train ensemble models with data"""
+        try:
+            if symbol not in self.ensemble_models:
+                return
+            
+            # Train each model
+            for model_name, model in self.ensemble_models[symbol].items():
+                try:
+                    model.fit(X, y)
+                    self.logger.info(f\"✅ Trained {model_name} for {symbol} with {len(X)} samples\")
+                except Exception as e:
+                    self.logger.warning(f\"Failed to train {model_name}: {e}\")\n            \n        except Exception as e:
+            self.logger.error(f\"Error training ensemble models: {e}\")
+    
     async def _update_model_weights(self, symbol: str):
-        """Update model weights based on recent performance"""
+        \"\"\"Update model weights based on recent performance\"\"\"
         try:
             # This is a simplified weight update
             # In practice, you'd track individual model performance
@@ -619,25 +665,52 @@ class DeepLearningTradingEngine:
                     self.model_weights[symbol]['gradient_boost'] = 0.3
                     
         except Exception as e:
-            self.logger.error(f"Error updating model weights: {e}")
+            self.logger.error(f\"Error updating model weights: {e}\")"
     
-    def get_model_performance(self) -> Dict[str, Any]:
-        """Get current model performance metrics"""
+    def calculate_dynamic_stop_take(self, symbol: str, entry_price: float, 
+                                    side: str, features: MarketFeatures,
+                                    ai_confidence: float = 0.5) -> Tuple[float, float]:
+        """Calculate dynamic stop loss and take profit based on AI and market conditions"""
         try:
-            accuracy = self.correct_predictions / max(self.predictions_made, 1)
+            # Base values
+            base_stop_pct = 0.003  # 0.3% base
+            base_take_pct = 0.008  # 0.8% base
             
-            return {
-                'total_predictions': self.predictions_made,
-                'correct_predictions': self.correct_predictions,
-                'accuracy': accuracy,
-                'online_learning_samples': len(self.online_learner.feature_buffer),
-                'model_weights': self.model_weights,
-                'recent_performance': list(self.online_learner.performance_history)[-10:] if self.online_learner.performance_history else []
-            }
+            # Adjust based on volatility
+            volatility_factor = max(0.5, min(2.0, features.volatility * 100))
             
-        except Exception as e:
-            self.logger.error(f"Error getting model performance: {e}")
-            return {}
+            # Adjust based on AI confidence (higher confidence = tighter stop, wider profit target)
+            confidence_factor = 0.7 + (ai_confidence * 0.6)  # 0.7 to 1.3
+            
+            # Adjust based on RSI (oversold = wider stop, overbought = tighter stop)
+            rsi_factor = 1.0
+            if features.rsi < 30:  # Oversold - give more room
+                rsi_factor = 1.3
+            elif features.rsi > 70:  # Overbought - tighter stop
+                rsi_factor = 0.8
+            
+            # Adjust based on momentum (strong momentum = wider profit target)
+            momentum_factor = 1.0 + min(abs(features.momentum) * 50, 0.5)
+            
+            # Calculate final percentages
+            stop_pct = base_stop_pct * volatility_factor * rsi_factor / confidence_factor
+            take_pct = base_take_pct * momentum_factor * confidence_factor * volatility_factor
+            
+            # Apply limits (0.15% to 1.0% for stop, 0.4% to 2.0% for take)
+            stop_pct = max(0.0015, min(0.01, stop_pct))
+            take_pct = max(0.004, min(0.02, take_pct))
+            
+            # Calculate actual prices
+            if side.upper() in ['BUY', 'LONG']:
+                stop_loss = entry_price * (1 - stop_pct)
+                take_profit = entry_price * (1 + take_pct)
+            else:  # SELL/SHORT
+                stop_loss = entry_price * (1 + stop_pct)
+                take_profit = entry_price * (1 - take_pct)
+            
+            self.logger.info(f\"🎯 Dynamic SL/TP for {symbol}:\")\n            self.logger.info(f\"   Stop: {stop_pct*100:.2f}% | Take: {take_pct*100:.2f}%\")\n            self.logger.info(f\"   Factors: Vol={volatility_factor:.2f}, Conf={confidence_factor:.2f}, RSI={rsi_factor:.2f}, Mom={momentum_factor:.2f}\")\n            \n            return stop_loss, take_profit\n            \n        except Exception as e:\n            self.logger.error(f\"Error calculating dynamic stop/take: {e}\")\n            # Fallback to conservative values\n            if side.upper() in ['BUY', 'LONG']:\n                return entry_price * 0.997, entry_price * 1.008\n            else:\n                return entry_price * 1.003, entry_price * 0.992
+    
+    async def add_position_result(self, symbol: str, result: str, pnl: float):\n        \"\"\"Add position result for training\"\"\"\n        try:\n            if symbol in self.feature_history and len(self.feature_history[symbol]) > 0:\n                latest_features = self.feature_history[symbol][-1]\n                \n                # Convert result to label\n                if result == 'win' or pnl > 0:\n                    label = 'WIN'\n                else:\n                    label = 'LOSS'\n                \n                # Add to online learner\n                await self.online_learner.add_training_sample(latest_features, label)\n                \n                # Train models if we have enough samples\n                if len(self.online_learner.feature_buffer) >= self.online_learner.min_samples_for_training:\n                    X, y = await self.online_learner._retrain_models()\n                    if X is not None and y is not None:\n                        await self._train_ensemble_models(symbol, X, y)\n                        self.logger.info(f\"🧠 AI trained on {symbol} result: {result} (${pnl:.2f})\")\n                \n        except Exception as e:\n            self.logger.error(f\"Error adding position result: {e}\")\n    \n    def get_model_performance(self) -> Dict[str, Any]:\n        \"\"\"Get current model performance metrics\"\"\"\n        try:\n            accuracy = self.correct_predictions / max(self.predictions_made, 1)\n            \n            return {\n                'total_predictions': self.predictions_made,\n                'correct_predictions': self.correct_predictions,\n                'accuracy': accuracy,\n                'online_learning_samples': len(self.online_learner.feature_buffer),\n                'model_weights': self.model_weights,\n                'recent_performance': list(self.online_learner.performance_history)[-10:] if self.online_learner.performance_history else []\n            }\n            \n        except Exception as e:\n            self.logger.error(f\"Error getting model performance: {e}\")\n            return {}"
     
     async def save_models(self, filepath: str):
         """Save trained models to disk"""

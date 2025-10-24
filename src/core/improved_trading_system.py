@@ -86,7 +86,8 @@ class ImprovedTradingSystem:
         
         # Initialize components
         self.binance = SimpleBinanceConnector(self.api_key, self.api_secret, self.use_testnet)
-        self.scalping_engine = SimpleScalpingSignals()
+        # Pass AI engine to signal generator for dynamic stop loss/take profit
+        self.scalping_engine = SimpleScalpingSignals(ai_engine=ai_engine)
         
         # Trading configuration - Use provided symbols or default to 30
         if symbols is not None:
@@ -160,6 +161,15 @@ class ImprovedTradingSystem:
     async def _on_tick(self, tick: SimpleTick):
         """Process incoming tick data"""
         try:
+            # Update AI engine with market data (CRITICAL for features and predictions!)
+            if self.ai_engine:
+                self.ai_engine.update_market_data(
+                    symbol=tick.symbol,
+                    price=tick.price,
+                    volume=tick.volume,
+                    timestamp=tick.timestamp / 1000  # Convert to seconds
+                )
+            
             # Update positions
             if tick.symbol in self.positions:
                 self.positions[tick.symbol].update_pnl(tick.price)
@@ -181,7 +191,7 @@ class ImprovedTradingSystem:
                         await self._notify_dashboard_signal(tick.symbol, signal)
                     
         except Exception as e:
-            self.logger.error(f"❌ Error processing tick for {tick.symbol}: {e}")
+            self.logger.error(f\"❌ Error processing tick for {tick.symbol}: {e}\")"
     
     async def _notify_dashboard_update(self):
         """Notify dashboard of updates"""
