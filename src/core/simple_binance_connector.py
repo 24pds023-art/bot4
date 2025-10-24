@@ -351,11 +351,12 @@ class SimpleBinanceConnector:
 class SimpleScalpingSignals:
     """Simple but effective scalping signal generator"""
     
-    def __init__(self):
+    def __init__(self, ai_engine=None):
         self.price_history = {}
         self.volume_history = {}
         self.signal_count = 0
         self.last_signal_time = {}
+        self.ai_engine = ai_engine  # AI engine for dynamic stop loss/take profit
         
         # Balanced parameters for good win rate with sufficient signals
         self.min_signal_interval = 10.0  # 10 seconds between signals
@@ -455,24 +456,26 @@ class SimpleScalpingSignals:
         self.signal_count += 1
         self.last_signal_time[symbol] = current_time
         
-        # Balanced stop/profit for crypto scalping
-        if signal_type == 'BUY':
-            stop_loss = price * 0.9975  # 0.25% stop
-            take_profit = price * 1.0075  # 0.75% profit (1:3 R:R)
-        else:
-            stop_loss = price * 1.0025  # 0.25% stop
-            take_profit = price * 0.9925  # 0.75% profit
-        
-        return {
-            'signal_type': signal_type,
-            'strength': min(signal_strength, 1.0),
-            'confidence': min(signal_strength * 1.1, 1.0),
-            'entry_price': price,
-            'stop_loss': stop_loss,
-            'take_profit': take_profit,
-            'reasoning': reasoning,
-            'momentum': momentum,
-            'volume_ratio': volume_ratio,
-            'change_24h': tick.change_24h
-        
-        }
+        # DYNAMIC stop/profit using AI if available
+        if self.ai_engine and hasattr(self.ai_engine, 'calculate_dynamic_stop_take'):
+            try:
+                # Get latest features from AI engine
+                if symbol in self.ai_engine.feature_history and len(self.ai_engine.feature_history[symbol]) > 0:
+                    latest_features = self.ai_engine.feature_history[symbol][-1]
+                    stop_loss, take_profit = self.ai_engine.calculate_dynamic_stop_take(
+                        symbol=symbol,
+                        entry_price=price,
+                        side=signal_type,
+                        features=latest_features,
+                        ai_confidence=min(signal_strength, 1.0)
+                    )
+                    self.logger.info(f\"🤖 AI-calculated SL/TP for {symbol}: Stop=${stop_loss:.4f}, Take=${take_profit:.4f}\")
+                else:
+                    # Fallback to conservative defaults
+                    if signal_type == 'BUY':
+                        stop_loss = price * 0.997  # 0.3% stop
+                        take_profit = price * 1.008  # 0.8% profit
+                    else:
+                        stop_loss = price * 1.003  # 0.3% stop
+                        take_profit = price * 0.992  # 0.8% profit
+                    self.logger.debug(f\"Using fallback SL/TP (no AI features yet)\")\n            except Exception as e:\n                self.logger.warning(f\"AI SL/TP calculation failed: {e}, using fallback\")\n                # Fallback\n                if signal_type == 'BUY':\n                    stop_loss = price * 0.997\n                    take_profit = price * 1.008\n                else:\n                    stop_loss = price * 1.003\n                    take_profit = price * 0.992\n        else:\n            # No AI engine - use conservative defaults\n            if signal_type == 'BUY':\n                stop_loss = price * 0.997  # 0.3% stop\n                take_profit = price * 1.008  # 0.8% profit\n            else:\n                stop_loss = price * 1.003  # 0.3% stop\n                take_profit = price * 0.992  # 0.8% profit\n        \n        return {\n            'signal_type': signal_type,\n            'strength': min(signal_strength, 1.0),\n            'confidence': min(signal_strength * 1.1, 1.0),\n            'entry_price': price,\n            'stop_loss': stop_loss,\n            'take_profit': take_profit,\n            'reasoning': reasoning,\n            'momentum': momentum,\n            'volume_ratio': volume_ratio,\n            'change_24h': tick.change_24h\n        \n        }"

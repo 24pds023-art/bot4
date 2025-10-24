@@ -171,7 +171,9 @@ class UltimateAutomatedTradingSystem:
                 
                 # Connect AI to trading system (CRITICAL!)
                 self.trading_system.ai_engine = self.ai_engine
-                self.logger.info("🔗 AI engine connected to trading system")
+                # Also connect AI to signal generator for dynamic stop loss/take profit
+                self.trading_system.scalping_engine.ai_engine = self.ai_engine
+                self.logger.info("🔗 AI engine connected to trading system and signal generator")
                 
                 # Try to load previous models (for continuity)
                 model_files = ['data/models/final_save.pkl', 'data/models/auto_save.pkl']
