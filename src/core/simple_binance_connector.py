@@ -358,10 +358,10 @@ class SimpleScalpingSignals:
         self.last_signal_time = {}
         self.ai_engine = ai_engine  # AI engine for dynamic stop loss/take profit
         
-        # Balanced parameters for good win rate with sufficient signals
-        self.min_signal_interval = 10.0  # 10 seconds between signals
-        self.momentum_threshold = 0.0012  # 0.12% momentum (balanced)
-        self.volume_threshold = 1.4  # 40% above average (balanced confirmation)
+        # Conservative parameters for better win rate
+        self.min_signal_interval = 30.0  # 30 seconds between signals per symbol
+        self.momentum_threshold = 0.0015  # 0.15% momentum (more selective)
+        self.volume_threshold = 1.5  # 50% above average (stronger confirmation)
         
         self.logger = logging.getLogger(__name__)
     
@@ -448,8 +448,9 @@ class SimpleScalpingSignals:
             signal_strength += 0.10
             reasoning.append(f'24h drop: {tick.change_24h:.1f}%')
         
-        # STRICT threshold for quality trades (was 0.55 - way too low!)
-        if signal_strength < 0.75 or not signal_type:
+        # VERY STRICT threshold for quality trades - better win rate
+        # Require strong signals with multiple confirmations
+        if signal_strength < 0.80 or not signal_type:
             return None
         
         # Generate signal
@@ -471,31 +472,31 @@ class SimpleScalpingSignals:
                     )
                     self.logger.info(f"🤖 AI-calculated SL/TP for {symbol}: Stop=${stop_loss:.4f}, Take=${take_profit:.4f}")
                 else:
-                    # Fallback to conservative defaults
+                    # Fallback to safer defaults (0.5% stop, 1.2% profit)
                     if signal_type == 'BUY':
-                        stop_loss = price * 0.997  # 0.3% stop
-                        take_profit = price * 1.008  # 0.8% profit
+                        stop_loss = price * 0.995  # 0.5% stop
+                        take_profit = price * 1.012  # 1.2% profit
                     else:
-                        stop_loss = price * 1.003  # 0.3% stop
-                        take_profit = price * 0.992  # 0.8% profit
+                        stop_loss = price * 1.005  # 0.5% stop
+                        take_profit = price * 0.988  # 1.2% profit
                     self.logger.debug(f'Using fallback SL/TP (no AI features yet)')
             except Exception as e:
                 self.logger.warning(f'AI SL/TP calculation failed: {e}, using fallback')
-                # Fallback
+                # Fallback with wider stops
                 if signal_type == 'BUY':
-                    stop_loss = price * 0.997
-                    take_profit = price * 1.008
+                    stop_loss = price * 0.995  # 0.5% stop
+                    take_profit = price * 1.012  # 1.2% profit
                 else:
-                    stop_loss = price * 1.003
-                    take_profit = price * 0.992
+                    stop_loss = price * 1.005  # 0.5% stop
+                    take_profit = price * 0.988  # 1.2% profit
         else:
-            # No AI engine - use conservative defaults
+            # No AI engine - use safer defaults (0.5% stop, 1.2% profit)
             if signal_type == 'BUY':
-                stop_loss = price * 0.997  # 0.3% stop
-                take_profit = price * 1.008  # 0.8% profit
+                stop_loss = price * 0.995  # 0.5% stop
+                take_profit = price * 1.012  # 1.2% profit
             else:
-                stop_loss = price * 1.003  # 0.3% stop
-                take_profit = price * 0.992  # 0.8% profit
+                stop_loss = price * 1.005  # 0.5% stop
+                take_profit = price * 0.988  # 1.2% profit
         
         return {
             'signal_type': signal_type,

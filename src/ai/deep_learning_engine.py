@@ -726,9 +726,10 @@ class DeepLearningTradingEngine:
             stop_pct = base_stop_pct * volatility_factor * rsi_factor / confidence_factor
             take_pct = base_take_pct * momentum_factor * confidence_factor * volatility_factor
             
-            # Apply limits (0.15% to 1.0% for stop, 0.4% to 2.0% for take)
-            stop_pct = max(0.0015, min(0.01, stop_pct))
-            take_pct = max(0.004, min(0.02, take_pct))
+            # Apply limits (0.4% to 1.2% for stop, 0.8% to 2.5% for take)
+            # Wider stops to avoid getting stopped out by normal market noise
+            stop_pct = max(0.004, min(0.012, stop_pct))  # 0.4% to 1.2%
+            take_pct = max(0.008, min(0.025, take_pct))  # 0.8% to 2.5%
             
             # Calculate actual prices
             if side.upper() in ['BUY', 'LONG']:
