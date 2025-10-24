@@ -191,7 +191,7 @@ class ImprovedTradingSystem:
                         await self._notify_dashboard_signal(tick.symbol, signal)
                     
         except Exception as e:
-            self.logger.error(f\"❌ Error processing tick for {tick.symbol}: {e}\")"
+            self.logger.error(f"❌ Error processing tick for {tick.symbol}: {e}")
     
     async def _notify_dashboard_update(self):
         """Notify dashboard of updates"""
