@@ -478,4 +478,34 @@ class SimpleScalpingSignals:
                     else:
                         stop_loss = price * 1.003  # 0.3% stop
                         take_profit = price * 0.992  # 0.8% profit
-                    self.logger.debug(f'Using fallback SL/TP (no AI features yet)')\n            except Exception as e:\n                self.logger.warning(f'AI SL/TP calculation failed: {e}, using fallback')\n                # Fallback\n                if signal_type == 'BUY':\n                    stop_loss = price * 0.997\n                    take_profit = price * 1.008\n                else:\n                    stop_loss = price * 1.003\n                    take_profit = price * 0.992\n        else:\n            # No AI engine - use conservative defaults\n            if signal_type == 'BUY':\n                stop_loss = price * 0.997  # 0.3% stop\n                take_profit = price * 1.008  # 0.8% profit\n            else:\n                stop_loss = price * 1.003  # 0.3% stop\n                take_profit = price * 0.992  # 0.8% profit\n        \n        return {\n            'signal_type': signal_type,\n            'strength': min(signal_strength, 1.0),\n            'confidence': min(signal_strength * 1.1, 1.0),\n            'entry_price': price,\n            'stop_loss': stop_loss,\n            'take_profit': take_profit,\n            'reasoning': reasoning,\n            'momentum': momentum,\n            'volume_ratio': volume_ratio,\n            'change_24h': tick.change_24h\n        \n        }"
+                    self.logger.debug(f'Using fallback SL/TP (no AI features yet)')
+            except Exception as e:
+                self.logger.warning(f'AI SL/TP calculation failed: {e}, using fallback')
+                # Fallback
+                if signal_type == 'BUY':
+                    stop_loss = price * 0.997
+                    take_profit = price * 1.008
+                else:
+                    stop_loss = price * 1.003
+                    take_profit = price * 0.992
+        else:
+            # No AI engine - use conservative defaults
+            if signal_type == 'BUY':
+                stop_loss = price * 0.997  # 0.3% stop
+                take_profit = price * 1.008  # 0.8% profit
+            else:
+                stop_loss = price * 1.003  # 0.3% stop
+                take_profit = price * 0.992  # 0.8% profit
+        
+        return {
+            'signal_type': signal_type,
+            'strength': min(signal_strength, 1.0),
+            'confidence': min(signal_strength * 1.1, 1.0),
+            'entry_price': price,
+            'stop_loss': stop_loss,
+            'take_profit': take_profit,
+            'reasoning': reasoning,
+            'momentum': momentum,
+            'volume_ratio': volume_ratio,
+            'change_24h': tick.change_24h
+        }
