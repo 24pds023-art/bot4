@@ -642,13 +642,15 @@ class DeepLearningTradingEngine:
             for model_name, model in self.ensemble_models[symbol].items():
                 try:
                     model.fit(X, y)
-                    self.logger.info(f\"✅ Trained {model_name} for {symbol} with {len(X)} samples\")
+                    self.logger.info(f"✅ Trained {model_name} for {symbol} with {len(X)} samples")
                 except Exception as e:
-                    self.logger.warning(f\"Failed to train {model_name}: {e}\")\n            \n        except Exception as e:
-            self.logger.error(f\"Error training ensemble models: {e}\")
+                    self.logger.warning(f"Failed to train {model_name}: {e}")
+            
+        except Exception as e:
+            self.logger.error(f"Error training ensemble models: {e}")
     
     async def _update_model_weights(self, symbol: str):
-        \"\"\"Update model weights based on recent performance\"\"\"
+        '''Update model weights based on recent performance'''
         try:
             # This is a simplified weight update
             # In practice, you'd track individual model performance
@@ -665,7 +667,7 @@ class DeepLearningTradingEngine:
                     self.model_weights[symbol]['gradient_boost'] = 0.3
                     
         except Exception as e:
-            self.logger.error(f\"Error updating model weights: {e}\")"
+            self.logger.error(f'Error updating model weights: {e}')
     
     def calculate_dynamic_stop_take(self, symbol: str, entry_price: float, 
                                     side: str, features: MarketFeatures,
@@ -708,9 +710,62 @@ class DeepLearningTradingEngine:
                 stop_loss = entry_price * (1 + stop_pct)
                 take_profit = entry_price * (1 - take_pct)
             
-            self.logger.info(f\"🎯 Dynamic SL/TP for {symbol}:\")\n            self.logger.info(f\"   Stop: {stop_pct*100:.2f}% | Take: {take_pct*100:.2f}%\")\n            self.logger.info(f\"   Factors: Vol={volatility_factor:.2f}, Conf={confidence_factor:.2f}, RSI={rsi_factor:.2f}, Mom={momentum_factor:.2f}\")\n            \n            return stop_loss, take_profit\n            \n        except Exception as e:\n            self.logger.error(f\"Error calculating dynamic stop/take: {e}\")\n            # Fallback to conservative values\n            if side.upper() in ['BUY', 'LONG']:\n                return entry_price * 0.997, entry_price * 1.008\n            else:\n                return entry_price * 1.003, entry_price * 0.992
+            self.logger.info(f'🎯 Dynamic SL/TP for {symbol}:')
+            self.logger.info(f'   Stop: {stop_pct*100:.2f}% | Take: {take_pct*100:.2f}%')
+            self.logger.info(f'   Factors: Vol={volatility_factor:.2f}, Conf={confidence_factor:.2f}, RSI={rsi_factor:.2f}, Mom={momentum_factor:.2f}')
+            
+            return stop_loss, take_profit
+            
+        except Exception as e:
+            self.logger.error(f'Error calculating dynamic stop/take: {e}')
+            # Fallback to conservative values
+            if side.upper() in ['BUY', 'LONG']:
+                return entry_price * 0.997, entry_price * 1.008
+            else:
+                return entry_price * 1.003, entry_price * 0.992
     
-    async def add_position_result(self, symbol: str, result: str, pnl: float):\n        \"\"\"Add position result for training\"\"\"\n        try:\n            if symbol in self.feature_history and len(self.feature_history[symbol]) > 0:\n                latest_features = self.feature_history[symbol][-1]\n                \n                # Convert result to label\n                if result == 'win' or pnl > 0:\n                    label = 'WIN'\n                else:\n                    label = 'LOSS'\n                \n                # Add to online learner\n                await self.online_learner.add_training_sample(latest_features, label)\n                \n                # Train models if we have enough samples\n                if len(self.online_learner.feature_buffer) >= self.online_learner.min_samples_for_training:\n                    X, y = await self.online_learner._retrain_models()\n                    if X is not None and y is not None:\n                        await self._train_ensemble_models(symbol, X, y)\n                        self.logger.info(f\"🧠 AI trained on {symbol} result: {result} (${pnl:.2f})\")\n                \n        except Exception as e:\n            self.logger.error(f\"Error adding position result: {e}\")\n    \n    def get_model_performance(self) -> Dict[str, Any]:\n        \"\"\"Get current model performance metrics\"\"\"\n        try:\n            accuracy = self.correct_predictions / max(self.predictions_made, 1)\n            \n            return {\n                'total_predictions': self.predictions_made,\n                'correct_predictions': self.correct_predictions,\n                'accuracy': accuracy,\n                'online_learning_samples': len(self.online_learner.feature_buffer),\n                'model_weights': self.model_weights,\n                'recent_performance': list(self.online_learner.performance_history)[-10:] if self.online_learner.performance_history else []\n            }\n            \n        except Exception as e:\n            self.logger.error(f\"Error getting model performance: {e}\")\n            return {}"
+    async def add_position_result(self, symbol: str, result: str, pnl: float):
+        '''Add position result for training'''
+        try:
+            if symbol in self.feature_history and len(self.feature_history[symbol]) > 0:
+                latest_features = self.feature_history[symbol][-1]
+                
+                # Convert result to label
+                if result == 'win' or pnl > 0:
+                    label = 'WIN'
+                else:
+                    label = 'LOSS'
+                
+                # Add to online learner
+                await self.online_learner.add_training_sample(latest_features, label)
+                
+                # Train models if we have enough samples
+                if len(self.online_learner.feature_buffer) >= self.online_learner.min_samples_for_training:
+                    X, y = await self.online_learner._retrain_models()
+                    if X is not None and y is not None:
+                        await self._train_ensemble_models(symbol, X, y)
+                        self.logger.info(f'🧠 AI trained on {symbol} result: {result} (${pnl:.2f})')
+                
+        except Exception as e:
+            self.logger.error(f'Error adding position result: {e}')
+    
+    def get_model_performance(self) -> Dict[str, Any]:
+        '''Get current model performance metrics'''
+        try:
+            accuracy = self.correct_predictions / max(self.predictions_made, 1)
+            
+            return {
+                'total_predictions': self.predictions_made,
+                'correct_predictions': self.correct_predictions,
+                'accuracy': accuracy,
+                'online_learning_samples': len(self.online_learner.feature_buffer),
+                'model_weights': self.model_weights,
+                'recent_performance': list(self.online_learner.performance_history)[-10:] if self.online_learner.performance_history else []
+            }
+            
+        except Exception as e:
+            self.logger.error(f'Error getting model performance: {e}')
+            return {}
     
     async def save_models(self, filepath: str):
         """Save trained models to disk"""
