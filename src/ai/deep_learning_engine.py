@@ -558,13 +558,28 @@ class DeepLearningTradingEngine:
                     if hasattr(model, 'n_features_in_'):
                         if hasattr(model, 'predict_proba'):
                             prob = model.predict_proba(feature_array)[0]
-                            pred = np.argmax(prob)
+                            
+                            # Handle different number of classes
+                            # Models might have 2 classes (WIN/LOSS) or 3 classes (HOLD/BUY/SELL)
+                            if len(prob) == 2:
+                                # Convert 2-class to 3-class: [HOLD, BUY/WIN, SELL/LOSS]
+                                # Assume class 0 is LOSS (SELL) and class 1 is WIN (BUY)
+                                prob_3class = np.array([0.0, prob[1], prob[0]])  # [HOLD, BUY, SELL]
+                                probabilities[model_name] = prob_3class
+                                pred = np.argmax(prob_3class)
+                            elif len(prob) == 3:
+                                probabilities[model_name] = prob
+                                pred = np.argmax(prob)
+                            else:
+                                # Unexpected number of classes, use default
+                                probabilities[model_name] = np.array([0.33, 0.33, 0.34])
+                                pred = 0
+                            
                             predictions[model_name] = pred
-                            probabilities[model_name] = prob
                         else:
                             pred = model.predict(feature_array)[0]
                             predictions[model_name] = pred
-                            probabilities[model_name] = [0.33, 0.33, 0.34]  # Default
+                            probabilities[model_name] = np.array([0.33, 0.33, 0.34])  # Default
                 except Exception as e:
                     self.logger.debug(f"Model {model_name} prediction failed: {e}")
                     continue
@@ -579,7 +594,20 @@ class DeepLearningTradingEngine:
             
             for model_name, prob in probabilities.items():
                 weight = weights.get(model_name, 0.33)
-                final_probs += np.array(prob) * weight
+                # Ensure prob is numpy array and has correct shape
+                prob_array = np.array(prob) if not isinstance(prob, np.ndarray) else prob
+                if len(prob_array) == 3:
+                    final_probs += prob_array * weight
+                else:
+                    self.logger.warning(f"Skipping {model_name}: unexpected probability shape {prob_array.shape}")
+            
+            # Normalize probabilities to sum to 1.0
+            prob_sum = np.sum(final_probs)
+            if prob_sum > 0:
+                final_probs = final_probs / prob_sum
+            else:
+                # Fallback to uniform distribution
+                final_probs = np.array([0.33, 0.33, 0.34])
             
             # Determine final signal
             final_pred = np.argmax(final_probs)
